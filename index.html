@@ -1630,7 +1630,7 @@ window.addEventListener('error',function(e){try{
 const SYNC_URL = 'https://script.google.com/macros/s/AKfycbxJD-zoF59DqllmZJlLCVO-dWbApHF1M-EeRTUCYbjVEw6d_wKsYED6LkKpOpFHYAA8ow/exec';
 const SYNC_KEY = 'hr-school-care-2026';
 const POLL_SEC = 60;
-const BUILD = 'v7.3.3';
+const BUILD = 'v7.3.4';
 const IDLE_MIN = 15;   // 미사용 자동 로그아웃 (분)
 const BEAT_MIN = 10;   // 접속 상태 갱신 주기 (분)
 const ONLINE_MIN = 15; // 이 시간 안에 활동했으면 접속 중으로 표시
@@ -2060,10 +2060,13 @@ async function doLogin(){
  let u=findUser(n);
  /* 계정은 있는데 비밀번호만 틀리면 바로 알려주고, 서버 확인은 뒤에서 조용히 (다른 기기에서 바꾼 비번이면 자동 로그인) */
  if(u&&u.status!=='pending'&&String(u.pw)!==String(p)){
-  err.textContent='비밀번호가 올바르지 않습니다';document.getElementById('lPw').value='';
-  (async()=>{try{const ok=await refreshUsers();if(!ok)return;const u2=findUser(n);
-   if(u2&&String(u2.pw)===String(p)&&!ME){document.getElementById('lPw').value=p;err.textContent='';doLogin()}}catch(e){}})();
-  return}
+  /* 로컬 정보가 오래됐을 수 있으니 서버 계정 목록을 짧게(최대 6초) 확인 후 판단 */
+  const btn=document.querySelector('#lock .lbtn');const t0=btn.textContent;btn.textContent='확인 중...';btn.disabled=true;logging=true;
+  try{await Promise.race([refreshUsers(),new Promise(r=>setTimeout(r,6000))])}catch(e){}
+  btn.textContent=t0;btn.disabled=false;logging=false;
+  const u2=findUser(n);
+  if(!(u2&&String(u2.pw)===String(p))){err.textContent='비밀번호가 올바르지 않습니다';document.getElementById('lPw').value='';return}
+  u=u2}
  /* 계정을 못 찾으면 서버에서 계정 정보를 한 번 더 확인 — 방금(3분 안) 받아온 데이터가 있으면 생략해 바로 답함 */
  if((!u||u.status==='pending')&&!(LASTPULL&&Date.now()-LASTPULL<3*60*1000)){
   const btn=document.querySelector('#lock .lbtn');
@@ -4124,7 +4127,9 @@ async function pull(silent){
  try{const j=await call('GET');
   const rt=(j.data&&j.data.updatedAt)||0,lt=DB.updatedAt||0;
   LASTPULL=Date.now();if(j.ver){SHEETVER=j.ver;try{rdVer()}catch(e){}}
-  if(j.data&&j.data.schools&&rt>lt){adopt(j.data);if(!silent)ts('최신 데이터를 불러왔습니다')}
+  /* 계정 목록은 항상 서버와 병합 (다른 기기에서 가입 · 비밀번호 변경한 것 즉시 반영) */
+  try{if(j.data&&Array.isArray(j.data.users)){mergeUsersFrom(j.data);LS.set(DB)}}catch(e){}
+  if(j.data&&j.data.schools&&(rt>lt||(lt>rt&&!DIRTY))){adopt(j.data);if(!silent)ts('최신 데이터를 불러왔습니다')}
   else if(lt>rt&&DIRTY){busy=false;return push()}
   busy=false;errN=0;sst('g','자동 동기화 켜짐','마지막 저장 '+stamp(DB.updatedAt));
  }catch(e){busy=false;errN++;
