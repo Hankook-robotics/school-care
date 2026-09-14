@@ -49,11 +49,12 @@ body.secx .grid,body.secx .rings,body.secx .stline{animation:secfade .38s ease}
 .hbar{display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative;z-index:1}
 .hlogo{background:#fff;border-radius:9px;padding:7px 11px;display:flex}
 .hlogo img{height:22px;display:block}
-.honl{flex:1;min-width:0;margin:0 10px;font-size:11px;font-weight:700;color:rgba(255,255,255,.88);
- white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;position:relative;z-index:1}
-.honl i{font-style:normal;position:relative;padding-left:11px;margin-right:7px}
-.honl i::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
- width:6px;height:6px;border-radius:50%;background:#3DDC84}
+.honl{flex:1;min-width:0;margin:0 10px;display:flex;align-items:center;overflow:hidden;
+ cursor:pointer;position:relative;z-index:1}
+.honl b{flex:0 0 auto;height:21px;padding:0 9px;border-radius:999px;display:inline-flex;align-items:center;
+ font-size:10.5px;font-weight:800;border:1.5px solid #0C3070;margin-left:-6px;white-space:nowrap}
+.honl b:first-child{margin-left:0}
+.honl b.more{background:rgba(255,255,255,.2);color:#fff}
 .pill-s{font-size:11.5px;font-weight:700;padding:7px 13px;border-radius:999px;background:rgba(255,255,255,.14);
  border:1px solid rgba(255,255,255,.22);color:#fff;white-space:nowrap}
 .yrsel{flex:0 0 auto;margin-bottom:4px;appearance:none;-webkit-appearance:none;font-size:12.5px;font-weight:800;
@@ -3723,7 +3724,11 @@ function rdLoginBar(){
   el.textContent=a.length?a[0].u+' , '+fmtFull(a[0].t):'기록 없음'}
  const ho=document.getElementById('hOnline');
  if(ho){let L=on.slice();if(ME&&!L.some(o=>String(o.id)===String(ME.id)))L.unshift({id:ME.id,u:(ME.name||ME.id)});
-  ho.innerHTML=(ME&&L.length)?L.slice(0,4).map(o=>`<i>${esc(o.u)}</i>`).join('')+(L.length>4?'외 '+(L.length-4)+'명':''):''}
+  const PAL=[['#5DCAA5','#04342C'],['#85B7EB','#042C53'],['#F0997B','#4A1B0C'],['#ED93B1','#4B1528'],['#FAC775','#412402']];
+  const col=n=>{let h=0;for(const c of String(n||''))h=(h*31+c.charCodeAt(0))>>>0;return PAL[h%PAL.length]};
+  ho.innerHTML=(ME&&L.length)?L.slice(0,3).map(o=>{const p=col(o.u||o.id);
+   return `<b style="background:${p[0]};color:${p[1]}">${esc(String(o.u||o.id).slice(0,3))}</b>`}).join('')
+   +(L.length>3?`<b class="more">+${L.length-3}</b>`:''):''}
  rdPend()}
 
 /* ============== 가입 승인 대기 알림 ============== */
