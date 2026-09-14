@@ -2036,8 +2036,14 @@ async function doLogin(){
  const keep=document.getElementById('lKeep').checked;
  if(!n){err.textContent='아이디 또는 이름을 입력해 주세요';return}
  let u=findUser(n);
- /* 로그인이 안 될 상황이면 서버에서 계정 정보를 한 번 더 확인 */
- if(!u||u.status==='pending'||String(u.pw)!==String(p)){
+ /* 계정은 있는데 비밀번호만 틀리면 바로 알려주고, 서버 확인은 뒤에서 조용히 (다른 기기에서 바꾼 비번이면 자동 로그인) */
+ if(u&&u.status!=='pending'&&String(u.pw)!==String(p)){
+  err.textContent='비밀번호가 올바르지 않습니다';document.getElementById('lPw').value='';
+  (async()=>{try{const ok=await refreshUsers();if(!ok)return;const u2=findUser(n);
+   if(u2&&String(u2.pw)===String(p)&&!ME){document.getElementById('lPw').value=p;err.textContent='';doLogin()}}catch(e){}})();
+  return}
+ /* 계정을 못 찾으면 서버에서 계정 정보를 한 번 더 확인 */
+ if(!u||u.status==='pending'){
   const btn=document.querySelector('#lock .lbtn');
   logging=true;const t0=btn.textContent;btn.textContent='확인 중...';btn.disabled=true;
   await refreshUsers();
