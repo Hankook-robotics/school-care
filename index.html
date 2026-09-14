@@ -1616,7 +1616,7 @@ async function doLogin(){
   await refreshUsers();
   btn.textContent=t0;btn.disabled=false;logging=false;
   u=findUser(n)}
- if(!u){err.textContent='등록되지 않은 아이디 또는 이름입니다';
+ if(!u){err.textContent=navigator.onLine===false?'인터넷 연결을 확인해 주세요':'등록되지 않은 아이디 또는 이름입니다';
    document.getElementById('lPw').value='';return}
  if(String(u.pw)!==String(p)){err.textContent='비밀번호가 올바르지 않습니다';
    document.getElementById('lPw').value='';return}
@@ -1631,7 +1631,7 @@ async function doLogin(){
  markAct();try{localStorage.setItem(AKEY,String(Date.now()))}catch(e){}
  beat(true);touchLogin(true);maybeNews();
  if(u.role==='admin')askNoti();
- if(hasNew())setTimeout(()=>{if(ME&&!document.querySelector('.ov.on'))openWhat()},900);
+ /* 로그인 시 업데이트 안내 자동 표시 안 함 — 더보기 → 업데이트 내역에서 확인 */
  rdActs();rdLoginBar();setTab(TAB);ts((ME.name||ME.id)+'님, 반갑습니다');
  if(String(u.pw)==='1111')setTimeout(()=>{if(document.querySelector('.ov.on')){const t=setInterval(()=>{if(!document.querySelector('.ov.on')){clearInterval(t);openPw(true)}},500)}else openPw(true)},1400)}
 /* ============== 비밀번호 변경 (로그인 전) ============== */
@@ -3632,7 +3632,11 @@ function adopt(d){if(!d||!d.schools)return false;applying=true;
  return true}
 async function call(method,payload){
  const u=SYNC_URL+(SYNC_URL.indexOf('?')<0?'?':'&')+'key='+encodeURIComponent(SYNC_KEY)+'&t='+Date.now();
- const r=await fetch(u,method==='POST'?{method:'POST',body:JSON.stringify(payload)}:{method:'GET'});
+ /* 15초 안에 응답이 없으면 중단 — 로그인 · 동기화가 무한 대기하지 않도록 */
+ const ac=('AbortController' in window)?new AbortController():null;
+ const tm=ac?setTimeout(()=>ac.abort(),15000):0;
+ let r;try{r=await fetch(u,Object.assign(method==='POST'?{method:'POST',body:JSON.stringify(payload)}:{method:'GET'},ac?{signal:ac.signal}:{}))}
+ finally{if(tm)clearTimeout(tm)}
  if(!r.ok)throw new Error('HTTP '+r.status);
  const j=await r.json();if(j.error)throw new Error(j.error);return j}
 async function pull(silent){
