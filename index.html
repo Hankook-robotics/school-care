@@ -1353,7 +1353,7 @@ body:not([data-tab=home]):not([data-tab=as]) .askpi{display:none}
     <img class="llogo" id="lLogo" src="" alt="한국로보틱스">
     <div class="lt">HR 현장 통합 관리</div><div class="ls">(주)한국로보틱스</div>
   </div>
-  <div class="flrow"><label class="fl">아이디 또는 이름</label></div>
+  <div class="flrow"><label class="fl">이름 또는 별명</label></div>
   <input class="inp" type="text" id="lName" placeholder="예) 안성용 또는 성용"
     autocomplete="off" autocapitalize="off" spellcheck="false">
   <label class="fl" style="margin-top:13px">비밀번호</label>
@@ -2068,7 +2068,7 @@ async function doLogin(){
  const n=document.getElementById('lName').value.trim();
  const p=document.getElementById('lPw').value,err=document.getElementById('lErr');
  const keep=document.getElementById('lKeep').checked;
- if(!n){err.textContent='아이디 또는 이름을 입력해 주세요';return}
+ if(!n){err.textContent='이름 또는 별명을 입력해 주세요';return}
  let u=findUser(n);
  /* 계정은 있는데 비밀번호만 틀리면 바로 알려주고, 서버 확인은 뒤에서 조용히 (다른 기기에서 바꾼 비번이면 자동 로그인) */
  if(u&&String(u.pw)!==String(p)){
@@ -2086,7 +2086,7 @@ async function doLogin(){
   await refreshUsers();
   btn.textContent=t0;btn.disabled=false;logging=false;
   u=findUser(n)}
- if(!u){err.textContent=navigator.onLine===false?'인터넷 연결을 확인해 주세요':'등록되지 않은 아이디 또는 이름입니다';
+ if(!u){err.textContent=navigator.onLine===false?'인터넷 연결을 확인해 주세요':'등록되지 않은 이름 또는 별명입니다';
    document.getElementById('lPw').value='';return}
  if(String(u.pw)!==String(p)){err.textContent='비밀번호가 올바르지 않습니다';
    document.getElementById('lPw').value='';return}
