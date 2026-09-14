@@ -51,6 +51,8 @@ body.secx .grid,body.secx .rings,body.secx .stline{animation:secfade .38s ease}
 .hlogo img{height:22px;display:block}
 .honl{flex:1;min-width:0;margin:0 10px;display:flex;align-items:center;overflow:hidden;
  cursor:pointer;position:relative;z-index:1}
+.honl:not(:empty)::before{content:'';flex:0 0 auto;width:7px;height:7px;border-radius:50%;
+ background:#3DDC84;margin-right:6px}
 .honl b{flex:0 0 auto;height:21px;padding:0 9px;border-radius:999px;display:inline-flex;align-items:center;
  font-size:10.5px;font-weight:800;border:1.5px solid #0C3070;margin-left:-6px;white-space:nowrap}
 .honl b:first-child{margin-left:0}
@@ -3723,7 +3725,7 @@ function rdLoginBar(){
   const a=(DB.logins||[]).filter(g=>!ADM[String(g&&g.ui)]).slice().sort((x,y)=>y.t-x.t);
   el.textContent=a.length?a[0].u+' , '+fmtFull(a[0].t):'기록 없음'}
  const ho=document.getElementById('hOnline');
- if(ho){let L=on.slice();if(ME&&!L.some(o=>String(o.id)===String(ME.id)))L.unshift({id:ME.id,u:(ME.name||ME.id)});
+ if(ho){let L=on.slice();if(ME&&!hiddenUser(ME)&&!L.some(o=>String(o.id)===String(ME.id)))L.unshift({id:ME.id,u:(ME.name||ME.id)});
   const PAL=[['#5DCAA5','#04342C'],['#85B7EB','#042C53'],['#F0997B','#4A1B0C'],['#ED93B1','#4B1528'],['#FAC775','#412402']];
   const col=n=>{let h=0;for(const c of String(n||''))h=(h*31+c.charCodeAt(0))>>>0;return PAL[h%PAL.length]};
   ho.innerHTML=(ME&&L.length)?L.slice(0,3).map(o=>{const p=col(o.u||o.id);
@@ -4926,7 +4928,7 @@ function rdPcUtil(){ /* 유틸바(접속자)만 갱신 — 홈 본문은 건드�
  const me=document.getElementById('pcMe');if(me)me.innerHTML=ME?`${esc(ME.name||ME.id)}<i>${isAdmin()?'관리자':'사용자'}</i>`:'';
  const on=document.getElementById('pcOn');
  if(on){let L=[];try{L=onlineList().filter(o=>!ADM[String(o.id)])}catch(e){}
-  if(ME&&!L.some(o=>String(o.id)===String(ME.id)))L.unshift({id:ME.id,u:(ME.name||ME.id)+' (나)'});
+  if(ME&&!hiddenUser(ME)&&!L.some(o=>String(o.id)===String(ME.id)))L.unshift({id:ME.id,u:(ME.name||ME.id)+' (나)'});
   on.style.display=ME?'':'none';on.innerHTML='접속중 '+L.length+'명 '+L.map(o=>`<i>${esc(o.u)}</i>`).join('')}
  const lg=document.getElementById('pcLogo'),src=document.querySelector('.hlogo img');if(lg&&src&&!lg.src)lg.src=src.src;
  const pv=document.getElementById('pcVer');if(pv&&!pv.textContent)pv.textContent='HR 현장 통합 관리 '+BUILD;
