@@ -1639,7 +1639,7 @@ window.addEventListener('error',function(e){try{
 const SYNC_URL = 'https://script.google.com/macros/s/AKfycbxJD-zoF59DqllmZJlLCVO-dWbApHF1M-EeRTUCYbjVEw6d_wKsYED6LkKpOpFHYAA8ow/exec';
 const SYNC_KEY = 'hr-school-care-2026';
 const POLL_SEC = 60;
-const BUILD = 'v7.3.5';
+const BUILD = 'v7.3.7';
 const IDLE_MIN = 15;   // 미사용 자동 로그아웃 (분)
 const BEAT_MIN = 10;   // 접속 상태 갱신 주기 (분)
 const ONLINE_MIN = 15; // 이 시간 안에 활동했으면 접속 중으로 표시
@@ -1722,6 +1722,8 @@ function normalize(){
  if(!DB.contacts||typeof DB.contacts!=='object')DB.contacts={};
  if(!DB.history)DB.history=[]; if(!DB.cycle)DB.cycle={p:6,r:12}; if(!DB.tomb)DB.tomb={};
  if(!DB.utomb)DB.utomb={};
+ if(!Array.isArray(DB.utrash))DB.utrash=[];
+ if(!DB.uperm||typeof DB.uperm!=='object')DB.uperm={};
  if(!Array.isArray(DB.works))DB.works=[];
  if(!DB.wtomb||typeof DB.wtomb!=='object')DB.wtomb={};
  if(!Array.isArray(DB.tips))DB.tips=[];
@@ -1735,11 +1737,8 @@ function normalize(){
  if((DB.usersV||1)<2){const u=DB.users.find(x=>String(x.id).toLowerCase()==='hr01');
   if(u&&String(u.pw)==='4609')u.pw='0000';
   DB.usersV=2;}
- if((DB.usersV||1)<3&&DB.updatedAt){   /* v7.3 계정 개편: 관리자 계정만 남기고 전부 삭제 + 삭제 기록(다른 기기 · 서버에서 되살아나지 않도록) */
-  const now=Date.now();DB.utomb=DB.utomb||{};const keep=[],gone=[];
-  (DB.users||[]).forEach(u=>{if(u.role==='admin')keep.push(u);else{gone.push(u.id);DB.utomb[u.id]=now}});
-  DB.users=keep.length?keep:DEFAULT_USERS();DB.usersV=3;DB.updatedAt=now;
-  DB.logs=DB.logs||[];DB.logs.push({id:'g'+now.toString(36)+'mig',t:now,u:'시스템',ui:'',s:'',n:'',y:YEAR,m:'계정 개편(v7.3): 일반 계정 '+gone.length+'개 삭제 · 회원가입 방식으로 전환'});}
+ if((DB.usersV||1)<3&&DB.updatedAt){   /* v7.3.6: 예전 계정 삭제 마이그레이션 제거 — 구버전 데이터를 가진 기기가 업데이트돼도 계정을 지우지 않음 */
+  DB.usersV=3;}
  if((DB.aliasV||0)<2){          /* 기본 별칭 채우기 (직접 넣은 별칭은 그대로 두고 합침) */
   DB.schools.forEach(s=>{const d=ALIAS[s.name];if(!d)return;
    const have=String(s.alias||'').split(/[,\s/·]+/).map(x=>x.trim()).filter(Boolean);
@@ -1984,7 +1983,7 @@ async function doJoin(){if(joining)return;
  const dup=(DB.users||[]).find(u=>K(u.id)===key||K(u.name)===key||String(u.alias||'').split(/[,\s]+/).some(a=>a&&K(a)===key))||shortName(nm);
  if(dup)return err.textContent='이미 사용 중인 이름입니다. 다른 별명으로 가입해 주세요';
  DB.users=DB.users||[];DB.users.push({id:nm,pw,name:nm,role:'user',mt:Date.now(),joined:Date.now()});
- if(DB.utomb)delete DB.utomb[nm];
+ if(DB.utomb)delete DB.utomb[nm];if(DB.uperm)delete DB.uperm[nm];
  LOG('','회원가입: '+nm);
  DB.updatedAt=Date.now();LS.set(DB);DIRTY=true;push();
  hideJoin();
@@ -2045,7 +2044,24 @@ function mergeUsersFrom(d){if(!d||!Array.isArray(d.users))return;
  const tb=Object.assign({},DB.utomb||{},d.utomb||{});const um={};
  const put=u=>{if(!u||!u.id)return;const k=String(u.id).toLowerCase();const o=um[k];if(!o||(u.mt||0)>=(o.mt||0))um[k]=u};
  (DB.users||[]).forEach(put);d.users.forEach(put);
- DB.users=Object.keys(um).map(k=>um[k]).filter(u=>!(tb[u.id]&&tb[u.id]>(u.mt||0)));DB.utomb=tb;unpend()}
+ DB.users=Object.keys(um).map(k=>um[k]).filter(u=>{const dead=tb[u.id]&&tb[u.id]>(u.mt||0);if(dead)stashUser(u);return !dead});
+ DB.utomb=tb;unpend()}
+/* v7.3.7: 계정 안전망 — 어떤 경로로든 목록에서 빠지는 계정은 삭제 대신 보관함(utrash)에 저장 */
+function stashUser(u){if(!u||!u.id)return;
+ if(DB.uperm&&DB.uperm[u.id]&&DB.uperm[u.id]>=(u.mt||0))return;   /* 관리자가 영구 삭제한 계정은 보관하지 않음 */
+ DB.utrash=DB.utrash||[];
+ const k=String(u.id).toLowerCase();
+ const i=DB.utrash.findIndex(x=>x&&String(x.id).toLowerCase()===k);
+ const rec=Object.assign({},u,{delAt:Date.now()});
+ if(i>=0)DB.utrash[i]=rec;else DB.utrash.push(rec);
+ if(DB.utrash.length>200)DB.utrash=DB.utrash.slice(-200)}
+function restoreUser(id){DB.utrash=DB.utrash||[];
+ const i=DB.utrash.findIndex(x=>x&&String(x.id)===String(id));if(i<0)return;
+ const u=Object.assign({},DB.utrash[i]);delete u.delAt;delete u.status;u.mt=Date.now();
+ if(DB.utomb)delete DB.utomb[u.id];if(DB.uperm)delete DB.uperm[u.id];
+ if(!(DB.users||[]).some(x=>String(x.id).toLowerCase()===String(u.id).toLowerCase()))DB.users.push(u);
+ DB.utrash.splice(i,1);
+ LOG('','계정 복구: '+(u.name||u.id));saveUsers();rdUsers();ts((u.name||u.id)+' 계정을 복구했습니다')}
 /* v7.3.5: 승인 대기 제도 삭제 — pending 계정은 발견 즉시 정식 계정으로 전환 */
 function unpend(){let n=0;(DB.users||[]).forEach(u=>{if(u&&u.status==='pending'){delete u.status;u.mt=Date.now();n++}});
  if(n)DIRTY=true;return n}
@@ -2059,7 +2075,7 @@ async function refreshUsers(){
   d.users.forEach(u=>{const k=String(u.id).toLowerCase(),o=um[k];
    if(!o||(u.mt||0)>=(o.mt||0))um[k]=u});
   const tb=Object.assign({},DB.utomb||{},d.utomb||{});
-  DB.users=Object.keys(um).map(k=>um[k]).filter(u=>!(tb[u.id]&&tb[u.id]>(u.mt||0)));
+  DB.users=Object.keys(um).map(k=>um[k]).filter(u=>{const dead=tb[u.id]&&tb[u.id]>(u.mt||0);if(dead)stashUser(u);return !dead});
   DB.utomb=tb;unpend();LS.set(DB);return true;
  }catch(e){return false}}
 let logging=false;
@@ -3860,6 +3876,11 @@ function rdUsers(){
         onchange="editUser('${esc(u.id)}','tip',this.checked)"> 건의 열람 권한
         <span class="iwh">건의 내용을 볼 수 있습니다 (작성자는 관리자만 확인)</span></label>`:''}
   </div>`).join('')}
+  ${(DB.utrash&&DB.utrash.length)?`<div class="hd2" style="margin-top:14px">삭제된 계정 · ${DB.utrash.length}개 <span class="iwh">자동 보관 · 복구를 누르면 되살아납니다</span></div>
+  ${DB.utrash.slice().sort((a,b)=>(b.delAt||0)-(a.delAt||0)).map(u=>`<div class="box" style="display:flex;align-items:center;gap:8px">
+    <div style="flex:1;min-width:0"><span class="d">${esc(u.name||u.id)}</span> <span class="tg">${esc(String(u.id))}</span>
+      <div class="fhint" style="margin-top:3px">삭제 ${fmtFull(u.delAt||0)}</div></div>
+    <button class="act" style="background:var(--okbg);color:var(--ok);border-color:#BFE3D3" onclick="restoreUser('${esc(u.id)}')">복구</button></div>`).join('')}`:''}
   <div style="height:14px"></div>`}
 function saveUsers(){DB.updatedAt=Date.now();LS.set(DB);queuePush();rdActs()}
 function approveUser(id){const u=findUser(id);if(!u)return;
@@ -3895,9 +3916,11 @@ function editUser(id,k,v){const u=findUser(id);if(!u)return;
 async function delUser(id){
  if(id==='admin')return ts('관리자 계정은 삭제할 수 없습니다');
  if(ME&&ME.id===id)return ts('접속 중인 계정은 삭제할 수 없습니다');
- if(!await confirmBox('계정 삭제',id+'\n이 계정을 삭제할까요?',{yes:'삭제',danger:1}))return;
+ if(!await confirmBox('계정 삭제',id+'\n이 계정을 영구 삭제할까요?\n복구할 수 없습니다.',{yes:'영구 삭제',danger:1}))return;
  LOG('','계정 삭제: '+id);
  DB.users=DB.users.filter(u=>u.id!==id);
+ DB.utrash=(DB.utrash||[]).filter(x=>!x||String(x.id)!==String(id));
+ DB.uperm=DB.uperm||{};DB.uperm[id]=Date.now();
  DB.utomb=DB.utomb||{};DB.utomb[id]=Date.now();
  saveUsers();rdUsers();ts('삭제했습니다')}
 
@@ -4146,7 +4169,7 @@ async function pull(silent){
 function queuePush(){if(!SYNC_URL||applying||uploading)return;DIRTY=true;pending=true;sst('y','저장 중');clearTimeout(pushT);pushT=setTimeout(push,900)}
 window.addEventListener('beforeunload',e=>{if(pending){e.preventDefault();e.returnValue=''}});
 async function push(){if(!SYNC_URL||uploading)return;
- try{let g=null;try{g=await call('GET');if(g&&g.data)mergeUsersFrom(g.data)}catch(e){}   /* 올리기 전에 서버 계정 목록 병합 */
+ try{let g=null;try{g=await call('GET');if(g&&g.data)mergeUsersFrom(g.data)}catch(e){try{g=await call('GET');if(g&&g.data)mergeUsersFrom(g.data)}catch(e2){}}   /* 올리기 전에 서버 계정 목록 병합 (실패 시 1회 재시도) */
   /* 이 기기에서 바꾼 게 없는데 서버가 더 최신이면 덮어쓰지 않고 서버 것을 받음 */
   if(!DIRTY&&g&&g.data&&g.data.schools&&(g.data.updatedAt||0)>(DB.updatedAt||0)){adopt(g.data);pending=false;sst('g','자동 동기화 켜짐','마지막 저장 '+stamp(DB.updatedAt));return}
   const j=await call('POST',{key:SYNC_KEY,data:DB});
