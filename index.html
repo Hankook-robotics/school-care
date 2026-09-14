@@ -2042,8 +2042,8 @@ async function doLogin(){
   (async()=>{try{const ok=await refreshUsers();if(!ok)return;const u2=findUser(n);
    if(u2&&String(u2.pw)===String(p)&&!ME){document.getElementById('lPw').value=p;err.textContent='';doLogin()}}catch(e){}})();
   return}
- /* 계정을 못 찾으면 서버에서 계정 정보를 한 번 더 확인 */
- if(!u||u.status==='pending'){
+ /* 계정을 못 찾으면 서버에서 계정 정보를 한 번 더 확인 — 방금(3분 안) 받아온 데이터가 있으면 생략해 바로 답함 */
+ if((!u||u.status==='pending')&&!(LASTPULL&&Date.now()-LASTPULL<3*60*1000)){
   const btn=document.querySelector('#lock .lbtn');
   logging=true;const t0=btn.textContent;btn.textContent='확인 중...';btn.disabled=true;
   await refreshUsers();
@@ -4071,7 +4071,7 @@ function imJSON(i){if(!ME||ME.role!=='admin'){i.value='';return ts('관리자만
  fr.readAsText(f);i.value=''}
 
 /* ============== 동기화 ============== */
-let busy=false,pushT=null,pollT=null,errN=0,applying=false,pending=false,uploading=false,DIRTY=false;
+let busy=false,pushT=null,pollT=null,errN=0,applying=false,pending=false,uploading=false,DIRTY=false,LASTPULL=0;
 const $=i=>document.getElementById(i);
 function sst(k,txt,desc){$('sDot').className='dot '+k;$('sTxt').textContent=txt;if(desc!==undefined)$('sDesc').textContent=desc}
 function stamp(t){if(!t)return'-';const d=new Date(t);
@@ -4100,7 +4100,7 @@ async function pull(silent){
  if(!SYNC_URL||busy||uploading)return;busy=true;if(!silent)sst('y','불러오는 중');
  try{const j=await call('GET');
   const rt=(j.data&&j.data.updatedAt)||0,lt=DB.updatedAt||0;
-  if(j.ver){SHEETVER=j.ver;try{rdVer()}catch(e){}}
+  LASTPULL=Date.now();if(j.ver){SHEETVER=j.ver;try{rdVer()}catch(e){}}
   if(j.data&&j.data.schools&&rt>lt){adopt(j.data);if(!silent)ts('최신 데이터를 불러왔습니다')}
   else if(lt>rt&&DIRTY){busy=false;return push()}
   busy=false;errN=0;sst('g','자동 동기화 켜짐','마지막 저장 '+stamp(DB.updatedAt));
