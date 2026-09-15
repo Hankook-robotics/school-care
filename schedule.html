@@ -43,6 +43,7 @@ button.danger{color:var(--bad)}
 .tbox{flex:1;min-width:280px;display:flex;flex-direction:column;gap:2px}
 .top input[type=text]{border:1px dashed transparent;background:transparent;font-weight:800;font-size:22px;letter-spacing:-.5px;padding:4px 8px;margin-left:-8px;width:100%;border-radius:10px;color:var(--ink)}
 .top input[type=text]:hover{background:var(--panel);border-color:var(--line)}
+.top input[type=text]:placeholder-shown{border-color:var(--acc2);background:var(--panel)}
 .top input[type=text]:focus{background:var(--panel);border-color:var(--acc2);outline:none}
 .thint{font-size:11px;color:var(--ink3);padding-left:1px}
 .mtabs{display:flex;gap:6px;flex-wrap:wrap}
@@ -289,7 +290,7 @@ function makeBoard(S){
  q('.bXls').onclick=()=>exportXlsx([S],safe(S.title)+'.xlsx');
  q('.bShare').onclick=e=>openShareMenu(S,e.currentTarget);
  q('.bDup').onclick=()=>{const c=JSON.parse(JSON.stringify(S));c.id=uid();c.tasks.forEach(t=>{t.id=uid();t.items.forEach(i=>i.id=uid());});
-  const i=DOC.boards.indexOf(S); DOC.boards.splice(i+1,0,c); persist(); const n=makeBoard(c); el.after(n); n.scrollIntoView({behavior:'smooth',block:'start'}); toast('아래에 복제했습니다');};
+  const i=DOC.boards.indexOf(S); DOC.boards.splice(i+1,0,c); persist(); const n=makeBoard(c); el.after(n); n.scrollIntoView({behavior:'smooth',block:'start'}); const t=n.querySelector('.title'); setTimeout(()=>{t.focus();t.select();},300); toast('아래에 복제했습니다. 프로젝트명을 바꿔 주세요');};
  q('.bDel').onclick=()=>{if(!confirm('"'+(S.title||'프로젝트명 없음')+'" 표를 삭제할까요? 되돌릴 수 없습니다.'))return;
   DOC.boards=DOC.boards.filter(b=>b!==S); if(!DOC.boards.length)DOC.boards=[blank()]; persist(); renderAll();};
  q('.wrap').addEventListener('scroll',()=>markMonthTab(S),{passive:true});
@@ -409,7 +410,7 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ===================== 상단 바 ===================== */
-function addBoard(b){DOC.boards.push(b);persist();const el=makeBoard(b);$('boards').appendChild(el);el.scrollIntoView({behavior:'smooth',block:'start'});const t=el.querySelector('.title');setTimeout(()=>t.focus(),300);}
+function addBoard(b,msg){DOC.boards.push(b);persist();const el=makeBoard(b);$('boards').appendChild(el);el.scrollIntoView({behavior:'smooth',block:'start'});const t=el.querySelector('.title');setTimeout(()=>t.focus(),300);if(msg!==false)toast(msg||'새 표가 추가됐습니다. 프로젝트명을 입력하세요');}
 $('btnAdd').onclick=()=>addBoard(blank()); $('btnAdd2').onclick=()=>addBoard(blank());
 $('btnPrint').onclick=()=>window.print();
 $('btnJson').onclick=()=>download(new Blob([JSON.stringify(DOC,null,1)],{type:'application/json'}),'일정표 저장파일.json');
@@ -419,7 +420,7 @@ $('fileJson').onchange=async e=>{const f=e.target.files[0];if(!f)return;
  catch(err){toast('파일을 읽지 못했습니다. 이 앱에서 저장한 파일인지 확인하세요');}e.target.value='';};
 $('btnXlsIn').onclick=()=>$('fileXls').click();
 $('fileXls').onchange=async e=>{const f=e.target.files[0];if(!f)return;
- try{const s=await importXlsx(f);addBoard(s);toast('엑셀에서 '+s.tasks.length+'개 행을 새 표로 불러왔습니다');}
+ try{const s=await importXlsx(f);addBoard(s,'엑셀에서 '+s.tasks.length+'개 행을 새 표로 불러왔습니다');}
  catch(err){console.error(err);toast('불러오기 실패: '+err.message);}e.target.value='';};
 $('btnXlsAll').onclick=()=>exportXlsx(DOC.boards,'일정표_전체.xlsx');
 function exportXlsx(boards,name){try{download(new Blob([buildXlsx(boards)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),name);toast('엑셀 파일을 저장했습니다');}catch(err){console.error(err);toast('엑셀 생성 실패: '+err.message);}}
