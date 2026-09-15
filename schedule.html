@@ -170,7 +170,7 @@ button.danger{color:var(--bad)}
 <body>
 
 <div class="top">
- <div class="tbox"><input id="title" type="text" placeholder="[갤럭시로봇파크] ㅇㅇ 일정표" aria-label="일정표 제목" title="눌러서 제목 수정"><span class="thint">제목을 눌러 수정</span></div>
+ <div class="tbox"><input id="title" type="text" placeholder="프로젝트명 입력" aria-label="프로젝트명" title="눌러서 프로젝트명 수정"><span class="thint">프로젝트명을 눌러 언제든 수정할 수 있습니다</span></div>
  <div class="mtabs" id="mtabs" aria-label="월 이동"></div>
 </div>
 
@@ -239,21 +239,13 @@ const parse=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d||
 const todayStr=fmt(new Date());
 
 function sample(){
- return {id:uid(),title:'[갤럭시로봇파크] ㅇㅇ 일정표',start:'2026-07',end:'2026-10',tasks:[
-  {id:uid(),name:'',items:[{id:uid(),date:'2026-08-12',text:'피자로봇 설치',color:'yellow'}]},
-  {id:uid(),name:'모형거치대 컨셉',items:[{id:uid(),date:'2026-09-08',text:'그립 및 거치 컨셉 회의',color:'none'},{id:uid(),date:'2026-09-10',text:'그립부 및 거치대 컨셉, 3D 파일 공유 완료',color:'none'}]},
-  {id:uid(),name:'그리퍼 핑거',items:[{id:uid(),date:'2026-09-02',text:'3안 그리퍼 관련 자료 공유',color:'none'},{id:uid(),date:'2026-09-08',text:'2안 그리퍼로 교체',color:'none'},{id:uid(),date:'2026-09-09',text:'3안 그리퍼 발주 완료',color:'none'},{id:uid(),date:'2026-09-10',text:'김태완 수석님 참관 하 커팅 성능 검증 및 결과 확인\n3안 그리퍼 발주 완료',color:'none'},{id:uid(),date:'2026-09-18',text:'납기 예정일',color:'orange'}]},
-  {id:uid(),name:'파우더통',items:[{id:uid(),date:'2026-09-10',text:'발주 완료',color:'none'},{id:uid(),date:'2026-09-16',text:'납기 예정일',color:'orange'}]},
-  {id:uid(),name:'싱크대+작업대',items:[{id:uid(),date:'2026-09-15',text:'발주 완료',color:'none'},{id:uid(),date:'2026-09-21',text:'납기 예정일',color:'orange'},{id:uid(),date:'2026-09-28',text:'설치 예정일',color:'green'}]},
-  {id:uid(),name:'수도공사',items:[{id:uid(),date:'2026-09-15',text:'수도공사 완료',color:'none'}]},
-  {id:uid(),name:'PC 프로그램',items:[{id:uid(),date:'2026-09-15',text:'업데이트 및 테스트 완료',color:'none'}]},
-  {id:uid(),name:'로봇 티칭',items:[{id:uid(),date:'2026-09-28',text:'작업 예정일',color:'none'},{id:uid(),date:'2026-10-01',end:'2026-10-14',text:'안정화 작업',color:'blue'}]}
- ]};
+ const d=new Date(); const st=d.getFullYear()+'-'+pad(d.getMonth()+1); const e=new Date(d.getFullYear(),d.getMonth()+3,1);
+ return {id:uid(),title:'',start:st,end:e.getFullYear()+'-'+pad(e.getMonth()+1),tasks:Array.from({length:8},()=>({id:uid(),name:'',items:[]}))};
 }
 function blank(){
  const d=new Date(); const s=d.getFullYear()+'-'+pad(d.getMonth()+1);
  const e=new Date(d.getFullYear(),d.getMonth()+3,1);
- return {id:uid(),title:'[갤럭시로봇파크] ㅇㅇ 일정표',start:s,end:e.getFullYear()+'-'+pad(e.getMonth()+1),tasks:[{id:uid(),name:'항목 1',items:[]}]};
+ return {id:uid(),title:'',start:s,end:e.getFullYear()+'-'+pad(e.getMonth()+1),tasks:[{id:uid(),name:'항목 1',items:[]}]};
 }
 let ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 let list=[]; let S=null;
@@ -262,7 +254,7 @@ function saveList(){ls.set(LS_LIST,JSON.stringify(list))}
 function persist(){
  if(!S) return;
  ls.set(LS_PRE+S.id,JSON.stringify(S));
- const i=list.findIndex(x=>x.id===S.id); const meta={id:S.id,title:S.title||'(제목 없음)',updated:Date.now()};
+ const i=list.findIndex(x=>x.id===S.id); const meta={id:S.id,title:S.title||'프로젝트명 입력',updated:Date.now()};
  if(i<0) list.unshift(meta); else list[i]=meta;
  saveList(); renderSel(); status('자동 저장됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}));
 }
@@ -272,7 +264,10 @@ function open(id){
  S=normalize(s); ls.set('schb_cur',id); renderAll(); return true;
 }
 function normalize(s){
- if(s.title==='[갤럭시로봇파크] 피자로봇 전체 일정표')s.title='[갤럭시로봇파크] ㅇㅇ 일정표';
+ if(s.title==='[갤럭시로봇파크] 피자로봇 전체 일정표'||s.title==='[갤럭시로봇파크] ㅇㅇ 일정표'){
+  const names=(s.tasks||[]).map(t=>t.name).join('|');
+  if(names==='|모형거치대 컨셉|그리퍼 핑거|파우더통|싱크대+작업대|수도공사|PC 프로그램|로봇 티칭'){s.title='';s.tasks=s.tasks.map(t=>({id:t.id||uid(),name:'',items:[]}));}
+ }
  s.tasks=(s.tasks||[]).map(t=>({id:t.id||uid(),name:t.name||'',items:(t.items||[]).map(it=>({id:it.id||uid(),date:it.date,end:it.end&&it.end>it.date?it.end:undefined,text:it.text||'',color:COLORS.includes(it.color)?it.color:'none'}))}));
  if(!s.start||!s.end||s.end<s.start){const b=blank();s.start=s.start||b.start;s.end=s.end<s.start?s.start:(s.end||b.end);}
  return s;
@@ -319,7 +314,7 @@ function renderGrid(){
   const row=ti+3;
   const no=document.createElement('button'); no.type='button'; no.className='cell no num'; no.textContent=ti+1; no.title='행 관리'; no.style.gridRow=row; no.onclick=e=>openRowMenu(ti,no); frag.appendChild(no);
   const nm=mk('cell name'); nm.style.gridRow=row; nm.style.setProperty('--sw',SWATCH[ti%SWATCH.length]);
-  const inp=document.createElement('input'); inp.value=t.name; inp.placeholder='항목명'; inp.setAttribute('aria-label','항목명'); inp.id='name_'+t.id;
+  const inp=document.createElement('input'); inp.value=t.name; inp.placeholder='항목명'; inp.title='눌러서 항목명 입력'; inp.setAttribute('aria-label','항목명'); inp.id='name_'+t.id;
   inp.addEventListener('input',()=>{t.name=inp.value;persist();});
   const sw=mk('sw'); nm.append(sw,inp); frag.appendChild(nm);
   DAYS.forEach((d,k)=>{const e=mk('cell d'+wc(d)+(d.s===todayStr?' today':'')+(d.day===1&&k?' mstart':''));e.style.gridRow=row;e.style.gridColumn=k+3;e.dataset.date=d.s;e.dataset.task=t.id;frag.appendChild(e);});
@@ -603,6 +598,7 @@ async function importXlsx(file){
 
 /* ===================== 시작 ===================== */
 loadList();
+list=list.map(m=>{try{const x=JSON.parse(ls.get(LS_PRE+m.id)||'null');if(x){const n=normalize(x);if(n.title!==x.title||JSON.stringify(n.tasks)!==JSON.stringify(x.tasks))ls.set(LS_PRE+m.id,JSON.stringify(n));return {...m,title:n.title||'프로젝트명 입력'};}}catch(e){}return m;}); saveList();
 const cur=ls.get('schb_cur');
 if(!(cur&&open(cur))&&!(list.length&&open(list[0].id))){S=sample();persist();ls.set('schb_cur',S.id);renderAll();}
 </script>
