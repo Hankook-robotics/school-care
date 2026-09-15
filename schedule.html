@@ -294,7 +294,11 @@ function makeBoard(S){
   DOC.boards=DOC.boards.filter(b=>b!==S); if(!DOC.boards.length)DOC.boards=[blank()]; persist(); renderAll();};
  q('.wrap').addEventListener('scroll',()=>markMonthTab(S),{passive:true});
  q('.grid').addEventListener('click',e=>{
-  const it=e.target.closest('.it'); if(it){openEditor(S,it.dataset.task,it.dataset.item);return;}
+  const it=e.target.closest('.it');
+  if(it){ // 옆 칸으로 넘친 글자 위를 눌렀으면 그 날짜에 새 일정 입력
+   const r=it.getBoundingClientRect(); const off=Math.floor((e.clientX-r.left)/34);
+   if(it.classList.contains('point')&&off>0){const base=S.tasks.find(t=>t.id===it.dataset.task).items.find(x=>x.id===it.dataset.item); const d=parse(base.date); d.setDate(d.getDate()+off); openEditor(S,it.dataset.task,null,fmt(d)); return;}
+   openEditor(S,it.dataset.task,it.dataset.item);return;}
   const d=e.target.closest('.d'); if(d)openEditor(S,d.dataset.task,null,d.dataset.date);
  });
  renderGrid(S);
@@ -598,7 +602,8 @@ function openShareMenu(S,anchor){
  const h=document.createElement('div'); h.className='rt'; h.textContent=S.title||'프로젝트명 없음'; m.appendChild(h);
  const mkb=(txt,sub,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=txt;const sm=document.createElement('small');sm.textContent=sub;b.appendChild(sm);b.onclick=()=>{closeRowMenu();fn();};m.appendChild(b);};
  mkb('링크로 보내기','받는 사람이 열면 같은 표가 뜹니다',()=>shareLink(S));
- mkb('이미지로 보내기','표를 그림으로 만들어 전송합니다',()=>shareImage(S));
+ mkb('표 이미지로 보내기','달마다 한 덩어리씩 세로로 쌓은 그림',()=>shareImage(S,'board'));
+ mkb('목록 이미지로 보내기','항목별로 날짜순 정리한 그림, 휴대폰에서 보기 편함',()=>shareImage(S,'list'));
  document.body.appendChild(m); const r=anchor.getBoundingClientRect();
  m.style.top=Math.min(r.bottom+4,window.innerHeight-m.offsetHeight-8)+'px'; m.style.left=Math.min(Math.max(8,r.left),window.innerWidth-m.offsetWidth-8)+'px'; RM=m;
  setTimeout(()=>document.addEventListener('pointerdown',rmOutside,{once:true}),0);
@@ -633,67 +638,108 @@ async function receiveShared(){
   DOC.boards.push(b); persist(); const el=makeBoard(b); $('boards').appendChild(el); el.scrollIntoView({behavior:'smooth',block:'start'}); toast('공유받은 표를 아래에 추가했습니다');}
  catch(err){console.error(err);toast('공유 링크를 읽지 못했습니다');}
 }
-/* 표를 그림으로 */
+/* 표를 그림으로: 달마다 한 덩어리씩 세로로 쌓기 */
 function colorOf(name){return getComputedStyle(document.documentElement).getPropertyValue(name).trim();}
-function drawBoard(S){
- // 일정이 있는 달만 그림에 담기(없으면 전체 기간)
+function monthsForImage(S){
  let D=days(S); const dates=[]; S.tasks.forEach(t=>t.items.forEach(i=>{dates.push(i.date);if(i.end)dates.push(i.end);}));
  if(dates.length){const lo=dates.reduce((a,b)=>a<b?a:b).slice(0,7), hi=dates.reduce((a,b)=>a>b?a:b).slice(0,7); const sub=D.filter(d=>{const m=d.s.slice(0,7);return m>=lo&&m<=hi;}); if(sub.length)D=sub;}
- const n=D.length; const IX={}; D.forEach((d,k)=>IX[d.s]=k);
- const CW=34, NOW=40, NAMEW=200, PADX=24, PADY=20, scale=2;
- const font=getComputedStyle(document.body).fontFamily;
- const T={bg:colorOf('--bg'),panel:colorOf('--panel'),panel2:colorOf('--panel2'),line:colorOf('--line'),line2:colorOf('--line2'),ink:colorOf('--ink'),ink2:colorOf('--ink2'),ink3:colorOf('--ink3'),acc:colorOf('--acc'),acc2:colorOf('--acc2'),sun:colorOf('--sun'),sat:colorOf('--sat'),today:colorOf('--todaybg')};
- const cc=c=>({bg:colorOf('--c-'+c),tx:colorOf('--t-'+c)});
- // 행 높이(여러 줄 메모 반영)
- const rowH=S.tasks.map(t=>{let lines=1;t.items.forEach(i=>{if(IX[i.date]!=null)lines=Math.max(lines,String(i.text).split('\n').length);});return Math.max(50,lines*16+22);});
- const headH=60+36+44; const gridW=NOW+NAMEW+n*CW; const W=gridW+PADX*2, H=PADY+headH+rowH.reduce((a,b)=>a+b,0)+PADY+14;
- const cv=document.createElement('canvas'); cv.width=W*scale; cv.height=H*scale; const g=cv.getContext('2d'); g.scale(scale,scale);
- g.fillStyle=T.bg; g.fillRect(0,0,W,H);
- const rr=(x,y,w,h,r,fill,stroke)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();if(fill){g.fillStyle=fill;g.fill();}if(stroke){g.strokeStyle=stroke;g.stroke();}};
+ const blocks=[]; let i=0; while(i<D.length){let j=i;while(j<D.length&&D[j].m===D[i].m&&D[j].y===D[i].y)j++; blocks.push(D.slice(i,j)); i=j;}
+ return blocks;
+}
+function painter(cv,scale){
+ const g=cv.getContext('2d'); g.scale(scale,scale); const font=getComputedStyle(document.body).fontFamily;
+ const rr=(x,y,w,h,r,fill)=>{r=Math.min(r,h/2,w/2);g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();g.fillStyle=fill;g.fill();};
  const txt=(t,x,y,size,color,weight,align,maxW)=>{g.font=(weight||400)+' '+size+'px '+font;g.fillStyle=color;g.textAlign=align||'left';g.textBaseline='middle';if(maxW!=null)g.fillText(t,x,y,Math.max(1,maxW));else g.fillText(t,x,y);};
- // 제목
- txt(S.title||'프로젝트명',PADX,PADY+18,22,T.ink,800);
- txt(D[0].s.slice(0,7).replace('-','.')+' ~ '+D[n-1].s.slice(0,7).replace('-','.')+'  ·  '+S.tasks.length+'개 항목',PADX,PADY+44,12,T.ink3,400);
- // 보드 카드
- const bx=PADX, by=PADY+60, bw=gridW, bh=36+44+rowH.reduce((a,b)=>a+b,0)+14;
- rr(bx,by,bw,bh,18,T.panel);
- const x0=bx+NOW+NAMEW; // 날짜 시작 x
- // 월 헤더
- txt('No',bx+NOW/2,by+18,11,T.ink3,600,'center'); txt('항목',bx+NOW+NAMEW/2,by+18,11,T.ink3,600,'center');
- let i=0; while(i<n){let j=i;while(j<n&&D[j].m===D[i].m&&D[j].y===D[i].y)j++;
-  const lx=x0+i*CW+6; g.fillStyle=T.acc2; g.beginPath(); g.arc(lx+4,by+18,4,0,Math.PI*2); g.fill();
-  txt(monLabel(D,i),lx+14,by+18,12.5,'#7A5C3A',700); i=j;}
- // 일 헤더
- const dy=by+36;
- D.forEach((d,k)=>{const cx=x0+k*CW+CW/2; const today=d.s===todayStr;
-  if(today)rr(x0+k*CW+1,dy+3,CW-2,38,10,T.acc);
-  const c1=today?T.bg:(d.wd===0?T.sun:d.wd===6?T.sat:T.ink2), c2=today?T.bg:(d.wd===0?T.sun:d.wd===6?T.sat:T.ink3);
-  txt(String(d.day),cx,dy+15,11.5,c1,600,'center'); txt(WD[d.wd],cx,dy+30,10,c2,500,'center');});
- // 행
- let y=dy+44;
- S.tasks.forEach((t,ti)=>{const h=rowH[ti]; const cy=y+h/2;
-  D.forEach((d,k)=>{if(d.wd===0||d.wd===6){g.fillStyle=T.panel2;g.fillRect(x0+k*CW,y,CW,h);} if(d.s===todayStr){g.fillStyle=T.today;g.fillRect(x0+k*CW,y,CW,h);} if(d.day===1&&k){g.fillStyle=T.line;g.fillRect(x0+k*CW,y,1,h);}});
-  g.setLineDash([3,3]); g.strokeStyle=T.line2; g.beginPath(); g.moveTo(bx+10,y+h); g.lineTo(bx+bw-10,y+h); g.stroke(); g.setLineDash([]);
-  txt(String(ti+1),bx+NOW/2,cy,11,T.ink3,400,'center');
-  rr(bx+NOW+4,cy-5,10,10,3,SWATCH[ti%SWATCH.length]);
-  if(t.name)txt(t.name,bx+NOW+22,cy,13,T.ink,700,'left',NAMEW-30); else txt('항목명',bx+NOW+22,cy,13,T.ink3,500);
-  const items=t.items.filter(it=>IX[it.date]!=null).sort((a,b)=>a.date<b.date?-1:1);
-  items.forEach((it,q)=>{const c=IX[it.date]; const next=items[q+1]?IX[items[q+1].date]:n; const col=cc(it.color);
-   const lines=String(it.text).split('\n'); g.font='500 12px '+font;
-   if(it.end){const span=Math.max(1,Math.min((IX[it.end]!=null?IX[it.end]:n-1)-c+1,n-c)); const px=x0+c*CW+2, pw=span*CW-4, ph=Math.min(h-12,lines.length*16+10);
-    rr(px,cy-ph/2,pw,ph,ph/2,col.bg); g.save(); g.beginPath(); g.rect(px,cy-ph/2,pw,ph); g.clip();
-    lines.forEach((ln,li)=>txt(ln,px+10,cy-(lines.length-1)*8+li*16,12,col.tx,600)); g.restore();}
-   else{const free=Math.max(1,Math.min(next-c,n-c)); const maxW=free*CW-4; let tw=0; lines.forEach(ln=>tw=Math.max(tw,g.measureText(ln).width)); const pw=Math.min(maxW,tw+20), ph=lines.length*16+10; const px=x0+c*CW+2;
-    rr(px,cy-ph/2,pw,ph,ph/2,col.bg); g.save(); g.beginPath(); g.rect(px,cy-ph/2,pw,ph); g.clip();
-    lines.forEach((ln,li)=>txt(ln,px+10,cy-(lines.length-1)*8+li*16,12,col.tx,500)); g.restore();}
-  });
-  y+=h;});
+ return {g,rr,txt,font};
+}
+function themeColors(){return {bg:colorOf('--bg'),panel:colorOf('--panel'),panel2:colorOf('--panel2'),line:colorOf('--line'),line2:colorOf('--line2'),ink:colorOf('--ink'),ink2:colorOf('--ink2'),ink3:colorOf('--ink3'),acc:colorOf('--acc'),acc2:colorOf('--acc2'),sun:colorOf('--sun'),sat:colorOf('--sat'),today:colorOf('--todaybg'),cc:c=>({bg:colorOf('--c-'+c),tx:colorOf('--t-'+c)})};}
+function drawBoard(S){
+ const blocks=monthsForImage(S); const T=themeColors();
+ const CW=30, NOW=36, NAMEW=170, PADX=20, PADY=18, scale=2, GAP=16;
+ const nameLines=t=>t.name?Math.min(2,Math.ceil(t.name.length/12)):1;
+ // 블록별 행 높이
+ const blockRows=blocks.map(D=>{const IX={};D.forEach((d,k)=>IX[d.s]=k);return S.tasks.map(t=>{let lines=1;t.items.forEach(i=>{if(IX[i.date]!=null)lines=Math.max(lines,String(i.text).split('\n').length);});return Math.max(46,lines*16+20,nameLines(t)*16+16);});});
+ const gridW=NOW+NAMEW+31*CW; const W=gridW+PADX*2;
+ const blockH=(bi)=>36+40+blockRows[bi].reduce((a,b)=>a+b,0)+10;
+ const H=PADY+56+blocks.reduce((a,_,bi)=>a+blockH(bi)+GAP,0)+PADY;
+ const cv=document.createElement('canvas'); cv.width=W*scale; cv.height=H*scale; const {g,rr,txt,font}=painter(cv,scale);
+ g.fillStyle=T.bg; g.fillRect(0,0,W,H);
+ txt(S.title||'프로젝트명',PADX,PADY+16,21,T.ink,800,'left',W-PADX*2);
+ const first=blocks[0][0], last=blocks[blocks.length-1][0];
+ txt(first.y+'.'+pad(first.m)+' ~ '+last.y+'.'+pad(last.m)+'  ·  '+S.tasks.length+'개 항목  ·  '+S.tasks.reduce((a,t)=>a+t.items.length,0)+'건 일정',PADX,PADY+40,12,T.ink3,400);
+ let by=PADY+56;
+ blocks.forEach((D,bi)=>{const n=D.length; const IX={}; D.forEach((d,k)=>IX[d.s]=k); const rows=blockRows[bi]; const bh=blockH(bi); const bx=PADX, bw=gridW;
+  rr(bx,by,bw,bh,16,T.panel);
+  const x0=bx+NOW+NAMEW;
+  // 월 헤더
+  txt('No',bx+NOW/2,by+18,10.5,T.ink3,600,'center'); txt('항목',bx+NOW+NAMEW/2,by+18,10.5,T.ink3,600,'center');
+  g.fillStyle=T.acc2; g.beginPath(); g.arc(x0+10,by+18,4,0,Math.PI*2); g.fill();
+  txt((D[0].y!==first.y||D[0].m===1?D[0].y+'년 ':'')+D[0].m+'월',x0+20,by+18,13,'#7A5C3A',700);
+  // 일 헤더
+  const dy=by+36;
+  D.forEach((d,k)=>{const cx=x0+k*CW+CW/2; const today=d.s===todayStr;
+   if(today)rr(x0+k*CW+1,dy+2,CW-2,36,9,T.acc);
+   const c1=today?T.bg:(d.wd===0?T.sun:d.wd===6?T.sat:T.ink2), c2=today?T.bg:(d.wd===0?T.sun:d.wd===6?T.sat:T.ink3);
+   txt(String(d.day),cx,dy+14,11,c1,600,'center'); txt(WD[d.wd],cx,dy+28,9.5,c2,500,'center');});
+  let y=dy+40;
+  S.tasks.forEach((t,ti)=>{const h=rows[ti]; const cy=y+h/2;
+   D.forEach((d,k)=>{if(d.wd===0||d.wd===6){g.fillStyle=T.panel2;g.fillRect(x0+k*CW,y,CW,h);} if(d.s===todayStr){g.fillStyle=T.today;g.fillRect(x0+k*CW,y,CW,h);}});
+   g.setLineDash([3,3]); g.strokeStyle=T.line2; g.beginPath(); g.moveTo(bx+10,y+h); g.lineTo(bx+bw-10,y+h); g.stroke(); g.setLineDash([]);
+   txt(String(ti+1),bx+NOW/2,cy,10.5,T.ink3,400,'center');
+   rr(bx+NOW+2,cy-5,10,10,3,SWATCH[ti%SWATCH.length]);
+   if(t.name){const nl=nameLines(t); if(nl===1)txt(t.name,bx+NOW+18,cy,12.5,T.ink,700,'left',NAMEW-26); else{txt(t.name.slice(0,12),bx+NOW+18,cy-8,12.5,T.ink,700,'left',NAMEW-26);txt(t.name.slice(12),bx+NOW+18,cy+8,12.5,T.ink,700,'left',NAMEW-26);}}
+   else txt('항목명',bx+NOW+18,cy,12.5,T.ink3,500);
+   const items=t.items.filter(it=>IX[it.date]!=null||(it.end&&it.date<D[0].s&&it.end>=D[0].s)).map(it=>({...it,c:IX[it.date]!=null?IX[it.date]:0})).sort((a,b)=>a.c-b.c);
+   items.forEach((it,q)=>{const c=it.c; const next=items[q+1]?items[q+1].c:n; const col=T.cc(it.color);
+    const lines=String(it.text).split('\n'); g.font='500 12px '+font;
+    if(it.end){const e=IX[it.end]!=null?IX[it.end]:(it.end>D[n-1].s?n-1:c); const span=Math.max(1,Math.min(e-c+1,n-c)); const px=x0+c*CW+2, pw=span*CW-4, ph=Math.min(h-10,lines.length*16+10);
+     rr(px,cy-ph/2,pw,ph,ph/2,col.bg); g.save(); g.beginPath(); g.rect(px,cy-ph/2,pw,ph); g.clip();
+     lines.forEach((ln,li)=>txt(ln,px+9,cy-(lines.length-1)*8+li*16,12,col.tx,600)); g.restore();}
+    else{const free=Math.max(1,Math.min(next-c,n-c)); const maxW=free*CW-4; let tw=0; lines.forEach(ln=>tw=Math.max(tw,g.measureText(ln).width)); const pw=Math.min(maxW,tw+18), ph=lines.length*16+10; const px=x0+c*CW+2;
+     rr(px,cy-ph/2,pw,ph,ph/2,col.bg); g.save(); g.beginPath(); g.rect(px,cy-ph/2,pw,ph); g.clip();
+     lines.forEach((ln,li)=>txt(ln,px+9,cy-(lines.length-1)*8+li*16,12,col.tx,500)); g.restore();}
+   });
+   y+=h;});
+  by+=bh+GAP;});
  return cv;
 }
-async function shareImage(S){
+/* 목록 그림: 항목별로 날짜순 나열 */
+function drawList(S){
+ const T=themeColors(); const W=720, PADX=24, scale=2;
+ const fmtD=s=>{const d=parse(s);return (d.getMonth()+1)+'.'+d.getDate()+'('+WD[d.getDay()]+')';};
+ const groups=S.tasks.map((t,ti)=>({t,ti,items:[...t.items].sort((a,b)=>a.date<b.date?-1:1)})).filter(x=>x.items.length);
+ const lineH=22, rowPad=10;
+ let H=24+56;
+ groups.forEach(gp=>{H+=34; gp.items.forEach(it=>{H+=String(it.text).split('\n').length*lineH+rowPad;}); H+=12;});
+ if(!groups.length)H+=60; H+=24;
+ const cv=document.createElement('canvas'); cv.width=W*scale; cv.height=H*scale; const {g,rr,txt}=painter(cv,scale);
+ g.fillStyle=T.bg; g.fillRect(0,0,W,H);
+ txt(S.title||'프로젝트명',PADX,24+14,21,T.ink,800,'left',W-PADX*2);
+ txt(S.start.replace('-','.')+' ~ '+S.end.replace('-','.')+'  ·  '+groups.reduce((a,x)=>a+x.items.length,0)+'건 일정',PADX,24+38,12,T.ink3,400);
+ let y=24+56;
+ if(!groups.length)txt('등록된 일정이 없습니다',PADX,y+20,13,T.ink3,500);
+ groups.forEach(gp=>{
+  const cardH=34+gp.items.reduce((a,it)=>a+String(it.text).split('\n').length*lineH+rowPad,0)+2;
+  rr(PADX,y,W-PADX*2,cardH,14,T.panel);
+  rr(PADX+16,y+12,10,10,3,SWATCH[gp.ti%SWATCH.length]);
+  txt(gp.t.name||(gp.ti+1)+'번 항목',PADX+34,y+17,14,T.ink,800,'left',W-PADX*2-50);
+  let iy=y+34;
+  gp.items.forEach(it=>{const lines=String(it.text).split('\n'); const col=T.cc(it.color); const h=lines.length*lineH+rowPad; const cy=iy+h/2;
+   const when=fmtD(it.date)+(it.end?' ~ '+fmtD(it.end):''); const isToday=it.date<=todayStr&&(it.end||it.date)>=todayStr;
+   if(isToday)rr(PADX+8,iy+3,W-PADX*2-16,h-6,10,T.today);
+   txt(when,PADX+20,cy,12,T.ink2,600,'left',150);
+   const px=PADX+180; const pw=W-PADX*2-180-14;
+   if(it.color!=='none')rr(px-8,iy+4,pw+8,h-8,(h-8)/2,col.bg);
+   lines.forEach((ln,li)=>txt(ln,px,cy-(lines.length-1)*lineH/2+li*lineH,13.5,it.color!=='none'?col.tx:T.ink,500,'left',pw-8));
+   g.setLineDash([3,3]); g.strokeStyle=T.line2; g.beginPath(); g.moveTo(PADX+16,iy+h); g.lineTo(W-PADX-16,iy+h); g.stroke(); g.setLineDash([]);
+   iy+=h;});
+  y+=cardH+12;});
+ return cv;
+}
+async function shareImage(S,kind){
  try{
-  const cv=drawBoard(S); const blob=await new Promise(r=>cv.toBlob(r,'image/png')); if(!blob)throw new Error('그림 생성 실패');
-  const name=safe(S.title)+'.png';
+  const cv=kind==='list'?drawList(S):drawBoard(S); const blob=await new Promise(r=>cv.toBlob(r,'image/png')); if(!blob)throw new Error('그림 생성 실패');
+  const name=safe(S.title)+(kind==='list'?' 목록':'')+'.png';
   if(navigator.canShare){const file=new File([blob],name,{type:'image/png'}); if(navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:S.title||'일정표'});return;}catch(e){if(e&&e.name==='AbortError')return;}}}
   await download(blob,name); toast('이미지를 저장했습니다. 저장된 그림을 보내세요');
  }catch(err){console.error(err);toast('이미지를 만들지 못했습니다: '+err.message);}
