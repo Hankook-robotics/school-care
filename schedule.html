@@ -153,8 +153,8 @@ button.danger{color:var(--bad)}
  <button id="btnAdd" type="button" class="pri">표 추가</button>
  <button id="btnXlsAll" type="button">엑셀 저장 (전체)</button>
  <button id="btnXlsIn" type="button">엑셀 불러오기</button>
- <button id="btnJson" type="button">JSON 저장</button>
- <button id="btnJsonIn" type="button">JSON 불러오기</button>
+ <button id="btnJson" type="button">파일 저장</button>
+ <button id="btnJsonIn" type="button">파일 불러오기</button>
  <button id="btnPrint" type="button">인쇄</button>
  <input id="fileXls" type="file" accept=".xlsx" hidden>
  <input id="fileJson" type="file" accept=".json,application/json" hidden>
@@ -405,11 +405,11 @@ document.addEventListener('keydown',e=>{
 function addBoard(b){DOC.boards.push(b);persist();const el=makeBoard(b);$('boards').appendChild(el);el.scrollIntoView({behavior:'smooth',block:'start'});const t=el.querySelector('.title');setTimeout(()=>t.focus(),300);}
 $('btnAdd').onclick=()=>addBoard(blank()); $('btnAdd2').onclick=()=>addBoard(blank());
 $('btnPrint').onclick=()=>window.print();
-$('btnJson').onclick=()=>download(new Blob([JSON.stringify(DOC,null,1)],{type:'application/json'}),'일정표.json');
+$('btnJson').onclick=()=>download(new Blob([JSON.stringify(DOC,null,1)],{type:'application/json'}),'일정표 저장파일.json');
 $('btnJsonIn').onclick=()=>$('fileJson').click();
 $('fileJson').onchange=async e=>{const f=e.target.files[0];if(!f)return;
  try{const j=JSON.parse(await f.text()); const bs=(Array.isArray(j.boards)?j.boards:[j]).map(normalize); bs.forEach(b=>{b.id=uid();DOC.boards.push(b);}); persist(); renderAll(); toast(bs.length+'개 표를 아래에 추가했습니다');}
- catch(err){toast('JSON 파일을 읽지 못했습니다');}e.target.value='';};
+ catch(err){toast('파일을 읽지 못했습니다. 이 앱에서 저장한 파일인지 확인하세요');}e.target.value='';};
 $('btnXlsIn').onclick=()=>$('fileXls').click();
 $('fileXls').onchange=async e=>{const f=e.target.files[0];if(!f)return;
  try{const s=await importXlsx(f);addBoard(s);toast('엑셀에서 '+s.tasks.length+'개 행을 새 표로 불러왔습니다');}
