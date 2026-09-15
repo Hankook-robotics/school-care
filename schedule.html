@@ -22,10 +22,10 @@
  color-scheme:light only;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;height:100%}
+html,body{margin:0;padding:0;min-height:100%}
 body{font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",Pretendard,"Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
  background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45;letter-spacing:-.2px;-webkit-font-smoothing:antialiased;
- display:flex;flex-direction:column}
+ padding-bottom:calc(30px + var(--sb))}
 button,input,select,textarea{font-family:inherit;color:inherit;font-size:14px}
 button{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:7px 14px;line-height:1.2;white-space:nowrap;color:var(--ink2)}
 button:hover{border-color:var(--ink3);color:var(--ink)}
@@ -36,7 +36,10 @@ button.danger{color:var(--bad)}
 .num{font-variant-numeric:tabular-nums}
 
 /* ---------- 상단 ---------- */
-.top{padding:calc(var(--st) + 18px) 24px 6px;display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center}
+.gbar{padding:calc(var(--st) + 14px) 24px 4px;display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
+.gbar .brand{font-size:13px;font-weight:700;color:var(--ink2);margin-right:6px}
+.board{margin:14px 24px 0}
+.top{padding:12px 0 6px;display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center}
 .tbox{flex:1;min-width:280px;display:flex;flex-direction:column;gap:2px}
 .top input[type=text]{border:1px dashed transparent;background:transparent;font-weight:800;font-size:22px;letter-spacing:-.5px;padding:4px 8px;margin-left:-8px;width:100%;border-radius:10px;color:var(--ink)}
 .top input[type=text]:hover{background:var(--panel);border-color:var(--line)}
@@ -45,16 +48,19 @@ button.danger{color:var(--bad)}
 .mtabs{display:flex;gap:6px;flex-wrap:wrap}
 .mt{padding:6px 14px;font-size:12.5px}
 .mt.on{background:var(--acc);color:var(--bg);border-color:var(--acc)}
-.tools{padding:6px 24px 12px;display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
+.tools{padding:0 0 12px;display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
 .tools .f{display:flex;align-items:center;gap:6px}
 .tools label{font-size:12px;color:var(--ink2);white-space:nowrap}
 .tools input[type=month]{border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:var(--panel);color:var(--ink)}
 .tools select{border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:var(--panel);color:var(--ink);max-width:240px}
 .tools .gap{width:1px;height:22px;background:var(--line);margin:0 4px}
 .status{font-size:12px;color:var(--ink3);margin-left:auto;white-space:nowrap}
+.bnum{font-size:11px;color:var(--ink3);margin-left:auto}
+.addboard{margin:18px 24px 0;display:flex;gap:10px;align-items:center}
+.addboard button{border-style:dashed;padding:12px 20px;width:100%;justify-content:center;display:flex;color:var(--ink2)}
 
 /* ---------- 보드 ---------- */
-.wrap{flex:1;overflow:auto;position:relative;margin:0 24px calc(24px + var(--sb));background:var(--panel);border-radius:18px;box-shadow:var(--shadow)}
+.wrap{overflow:auto;position:relative;margin:0;max-height:70vh;background:var(--panel);border-radius:18px;box-shadow:var(--shadow)}
 .grid{display:grid;grid-template-columns:var(--noW) var(--nameW) repeat(var(--n),var(--cw));grid-auto-rows:minmax(50px,auto);
  background:var(--panel);width:max-content;min-width:100%;padding:0 10px 6px}
 .cell{border-bottom:1px dashed var(--line2);position:relative;min-height:0}
@@ -129,36 +135,23 @@ button.danger{color:var(--bad)}
 /* ---------- 인쇄 ---------- */
 @page{size:A3 landscape;margin:10mm}
 @media print{
- .top,.tools,.addrow,.ovl,.toast,.rmenu{display:none!important}
+ .gbar,.tools,.addrow,.addboard,.ovl,.toast,.rmenu,.thint,.mtabs{display:none!important}
+ .top input[type=text]{border:none;padding:0;margin:0;font-size:20px}
+ .board{margin:0 0 16px;page-break-inside:avoid}
  body{background:#fff;display:block}
- .wrap{overflow:visible;margin:0;box-shadow:none;border-radius:0}
+ .wrap{overflow:visible;margin:0;box-shadow:none;border-radius:0;max-height:none}
  .grid{width:max-content}
  .h,.no,.name{position:static}
  .d:hover{background:inherit}
- .ptitle{display:block!important;font-size:22px;font-weight:800;margin:0 0 10px}
 }
-.ptitle{display:none}
 </style>
 </head>
 <body>
 
-<div class="top">
- <div class="tbox"><input id="title" type="text" placeholder="프로젝트명 입력" aria-label="프로젝트명" title="눌러서 프로젝트명 수정"><span class="thint">프로젝트명을 눌러 언제든 수정할 수 있습니다</span></div>
- <div class="mtabs" id="mtabs" aria-label="월 이동"></div>
-</div>
-
-<div class="tools">
- <select id="schSel" aria-label="저장된 일정표"></select>
- <button id="btnNew" type="button">새 일정표</button>
- <button id="btnDup" type="button">복제</button>
- <button id="btnDel" type="button">삭제</button>
- <span class="gap"></span>
- <div class="f"><label for="start">기간</label><input id="start" type="month"><span class="hint">부터</span><input id="end" type="month" aria-label="종료 월"><span class="hint">까지</span></div>
- <span class="gap"></span>
- <button id="btnRow" type="button">행 추가</button>
- <button id="btnToday" type="button">오늘</button>
- <span class="gap"></span>
- <button id="btnXls" type="button" class="pri">엑셀 저장</button>
+<div class="gbar">
+ <span class="brand">일정표 빌더</span>
+ <button id="btnAdd" type="button" class="pri">표 추가</button>
+ <button id="btnXlsAll" type="button">엑셀 저장 (전체)</button>
  <button id="btnXlsIn" type="button">엑셀 불러오기</button>
  <button id="btnJson" type="button">JSON 저장</button>
  <button id="btnJsonIn" type="button">JSON 불러오기</button>
@@ -168,14 +161,36 @@ button.danger{color:var(--bad)}
  <span class="status" id="status">자동 저장됨</span>
 </div>
 
-<div class="wrap" id="wrap">
- <h1 class="ptitle" id="ptitle"></h1>
- <div class="grid" id="grid"></div>
- <div class="addrow">
-  <button id="btnRow2" type="button">행 추가</button>
-  <span class="hint">날짜 칸을 누르면 내용을 적을 수 있습니다. 종료일을 넣으면 기간 막대가 되고, 번호를 누르면 행을 옮기거나 지울 수 있습니다.</span>
- </div>
-</div>
+<div id="boards"></div>
+
+<div class="addboard"><button id="btnAdd2" type="button">아래에 빈 표 추가</button></div>
+
+<template id="tplBoard">
+ <section class="board">
+  <div class="top">
+   <div class="tbox"><input class="title" type="text" placeholder="프로젝트명 입력" aria-label="프로젝트명" title="눌러서 프로젝트명 수정"><span class="thint">프로젝트명을 눌러 언제든 수정할 수 있습니다</span></div>
+   <div class="mtabs" aria-label="월 이동"></div>
+  </div>
+  <div class="tools">
+   <div class="f"><label>기간</label><input class="start" type="month" aria-label="시작 월"><span class="hint">부터</span><input class="end" type="month" aria-label="종료 월"><span class="hint">까지</span></div>
+   <span class="gap"></span>
+   <button class="bRow" type="button">행 추가</button>
+   <button class="bToday" type="button">오늘</button>
+   <span class="gap"></span>
+   <button class="bXls pri" type="button">엑셀 저장</button>
+   <button class="bDup" type="button">복제</button>
+   <button class="bDel danger" type="button">표 삭제</button>
+   <span class="bnum"></span>
+  </div>
+  <div class="wrap">
+   <div class="grid"></div>
+   <div class="addrow">
+    <button class="bRow2" type="button">행 추가</button>
+    <span class="hint">날짜 칸을 누르면 내용을 적을 수 있습니다. 종료일을 넣으면 기간 막대가 되고, 번호를 누르면 행을 옮기거나 지울 수 있습니다.</span>
+   </div>
+  </div>
+ </section>
+</template>
 
 <div class="ovl" id="ovl" hidden>
  <div class="ed" role="dialog" aria-modal="true" aria-labelledby="edTitle">
@@ -200,7 +215,7 @@ button.danger{color:var(--bad)}
 
 <script>
 /* ===================== 데이터 ===================== */
-const LS_LIST='schb_list', LS_PRE='schb_';
+const LS_DOC='schb_doc';
 const COLORS=['none','blue','green','yellow','orange','red','purple'];
 const COLOR_HEX={blue:'D6E7FA',green:'D8F1DF',yellow:'FFF0B3',orange:'FFE1C7',red:'F7C6C1',purple:'E6DAF7'};
 const SWATCH=['#F2B441','#8FBCF0','#F0A29B','#7FD1A2','#C4AEEB','#8CD3D6','#F5B98A','#A9B9E6'];
@@ -210,141 +225,154 @@ const pad=n=>String(n).padStart(2,'0');
 const fmt=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const parse=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d||1);};
 const todayStr=fmt(new Date());
+const $=id=>document.getElementById(id);
 
-function sample(){
+function blank(){
  const d=new Date(); const st=d.getFullYear()+'-'+pad(d.getMonth()+1); const e=new Date(d.getFullYear(),d.getMonth()+3,1);
  return {id:uid(),title:'',start:st,end:e.getFullYear()+'-'+pad(e.getMonth()+1),tasks:Array.from({length:8},()=>({id:uid(),name:'',items:[]}))};
 }
-function blank(){
- const d=new Date(); const s=d.getFullYear()+'-'+pad(d.getMonth()+1);
- const e=new Date(d.getFullYear(),d.getMonth()+3,1);
- return {id:uid(),title:'',start:s,end:e.getFullYear()+'-'+pad(e.getMonth()+1),tasks:[{id:uid(),name:'항목 1',items:[]}]};
-}
-let ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
-let list=[]; let S=null;
-function loadList(){try{list=JSON.parse(ls.get(LS_LIST)||'[]')}catch(e){list=[]}}
-function saveList(){ls.set(LS_LIST,JSON.stringify(list))}
-function persist(){
- if(!S) return;
- ls.set(LS_PRE+S.id,JSON.stringify(S));
- const i=list.findIndex(x=>x.id===S.id); const meta={id:S.id,title:S.title||'프로젝트명 입력',updated:Date.now()};
- if(i<0) list.unshift(meta); else list[i]=meta;
- saveList(); renderSel(); status('자동 저장됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}));
-}
-function open(id){
- let s=null; try{s=JSON.parse(ls.get(LS_PRE+id)||'null')}catch(e){}
- if(!s) return false;
- S=normalize(s); ls.set('schb_cur',id); renderAll(); return true;
-}
 function normalize(s){
+ s.id=s.id||uid(); s.title=s.title||'';
  if(s.title==='[갤럭시로봇파크] 피자로봇 전체 일정표'||s.title==='[갤럭시로봇파크] ㅇㅇ 일정표'){
   const names=(s.tasks||[]).map(t=>t.name).join('|');
   if(names==='|모형거치대 컨셉|그리퍼 핑거|파우더통|싱크대+작업대|수도공사|PC 프로그램|로봇 티칭'){s.title='';s.tasks=s.tasks.map(t=>({id:t.id||uid(),name:'',items:[]}));}
  }
  s.tasks=(s.tasks||[]).map(t=>({id:t.id||uid(),name:t.name||'',items:(t.items||[]).map(it=>({id:it.id||uid(),date:it.date,end:it.end&&it.end>it.date?it.end:undefined,text:it.text||'',color:COLORS.includes(it.color)?it.color:'none'}))}));
+ if(!s.tasks.length)s.tasks=[{id:uid(),name:'',items:[]}];
  if(!s.start||!s.end||s.end<s.start){const b=blank();s.start=s.start||b.start;s.end=s.end<s.start?s.start:(s.end||b.end);}
  return s;
 }
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+let DOC={boards:[]};
+function load(){
+ try{const d=JSON.parse(ls.get(LS_DOC)||'null'); if(d&&Array.isArray(d.boards)){DOC={boards:d.boards.map(normalize)};}}catch(e){}
+ if(!DOC.boards.length){ // 이전 버전(일정표 목록) 이어받기
+  try{const list=JSON.parse(ls.get('schb_list')||'[]'); const bs=[];
+   list.forEach(m=>{try{const x=JSON.parse(ls.get('schb_'+m.id)||'null');if(x)bs.push(normalize(x));}catch(e){}});
+   if(bs.length)DOC.boards=bs;}catch(e){}
+ }
+ if(!DOC.boards.length)DOC.boards=[blank()];
+}
+let saveT=null;
+function flush(){if(saveT){clearTimeout(saveT);saveT=null;} ls.set(LS_DOC,JSON.stringify(DOC)); status('자동 저장됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}));}
+function persist(){clearTimeout(saveT); saveT=setTimeout(flush,150);}
+window.addEventListener('pagehide',()=>{if(saveT)flush();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&saveT)flush();});
+function board(id){return DOC.boards.find(b=>b.id===id);}
 
 /* ===================== 날짜 계산 ===================== */
-function days(){
+function days(S){
  const out=[]; const s=parse(S.start), e=parse(S.end); e.setMonth(e.getMonth()+1);
- for(let d=new Date(s);d<e;d.setDate(d.getDate()+1)) out.push({s:fmt(d),d:new Date(d),wd:d.getDay(),day:d.getDate(),m:d.getMonth()+1,y:d.getFullYear()});
+ for(let d=new Date(s);d<e;d.setDate(d.getDate()+1)) out.push({s:fmt(d),wd:d.getDay(),day:d.getDate(),m:d.getMonth()+1,y:d.getFullYear()});
  return out;
 }
+function wc(d){return d.wd===0?' sun':d.wd===6?' sat':''}
 
 /* ===================== 렌더 ===================== */
-const $=id=>document.getElementById(id);
-const grid=$('grid');
-let DAYS=[], IDX={};
-function renderSel(){
- const sel=$('schSel'); sel.innerHTML='';
- list.forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.title;if(S&&m.id===S.id)o.selected=true;sel.appendChild(o);});
-}
+const V={}; // 표별 화면 상태: {el, DAYS, IDX}
 function renderAll(){
- $('title').value=S.title; $('start').value=S.start; $('end').value=S.end; $('ptitle').textContent=S.title;
- renderGrid(); renderSel(); scrollToDate(IDX[todayStr]!=null?todayStr:firstItemDate());
+ const box=$('boards'); box.innerHTML=''; for(const k in V)delete V[k];
+ DOC.boards.forEach(S=>box.appendChild(makeBoard(S)));
 }
-function firstItemDate(){let m=null;S.tasks.forEach(t=>t.items.forEach(i=>{if(IDX[i.date]!=null&&(m===null||i.date<m))m=i.date;}));return m;}
-function scrollToDate(d){const i=d?IDX[d]:null;if(i==null)return;$('wrap').scrollLeft=Math.max(0,(i-3)*34);}
-function renderGrid(){
- DAYS=days(); IDX={}; DAYS.forEach((d,i)=>IDX[d.s]=i);
- const n=DAYS.length; grid.style.setProperty('--n',n);
+function makeBoard(S){
+ const el=$('tplBoard').content.firstElementChild.cloneNode(true); el.dataset.b=S.id;
+ const q=sel=>el.querySelector(sel);
+ V[S.id]={el,DAYS:[],IDX:{}};
+ q('.title').value=S.title; q('.start').value=S.start; q('.end').value=S.end;
+ q('.title').addEventListener('input',e=>{S.title=e.target.value;persist();});
+ q('.start').addEventListener('change',e=>{const v=e.target.value;if(!v)return;S.start=v;if(S.end<v){S.end=v;q('.end').value=v;}persist();renderGrid(S);});
+ q('.end').addEventListener('change',e=>{const v=e.target.value;if(!v)return;S.end=v;if(S.start>v){S.start=v;q('.start').value=v;}persist();renderGrid(S);});
+ q('.bRow').onclick=()=>addRow(S); q('.bRow2').onclick=()=>addRow(S);
+ q('.bToday').onclick=()=>{if(V[S.id].IDX[todayStr]==null){toast('오늘이 기간 안에 없습니다');return;}scrollToDate(S,todayStr,true);};
+ q('.bXls').onclick=()=>exportXlsx([S],safe(S.title)+'.xlsx');
+ q('.bDup').onclick=()=>{const c=JSON.parse(JSON.stringify(S));c.id=uid();c.tasks.forEach(t=>{t.id=uid();t.items.forEach(i=>i.id=uid());});
+  const i=DOC.boards.indexOf(S); DOC.boards.splice(i+1,0,c); persist(); const n=makeBoard(c); el.after(n); n.scrollIntoView({behavior:'smooth',block:'start'}); toast('아래에 복제했습니다');};
+ q('.bDel').onclick=()=>{if(!confirm('"'+(S.title||'프로젝트명 없음')+'" 표를 삭제할까요? 되돌릴 수 없습니다.'))return;
+  DOC.boards=DOC.boards.filter(b=>b!==S); if(!DOC.boards.length)DOC.boards=[blank()]; persist(); renderAll();};
+ q('.wrap').addEventListener('scroll',()=>markMonthTab(S),{passive:true});
+ q('.grid').addEventListener('click',e=>{
+  const it=e.target.closest('.it'); if(it){openEditor(S,it.dataset.task,it.dataset.item);return;}
+  const d=e.target.closest('.d'); if(d)openEditor(S,d.dataset.task,null,d.dataset.date);
+ });
+ renderGrid(S);
+ requestAnimationFrame(()=>scrollToDate(S,V[S.id].IDX[todayStr]!=null?todayStr:firstItemDate(S)));
+ return el;
+}
+function renderGrid(S){
+ const v=V[S.id]; const grid=v.el.querySelector('.grid');
+ v.DAYS=days(S); v.IDX={}; v.DAYS.forEach((d,i)=>v.IDX[d.s]=i);
+ const DAYS=v.DAYS, IDX=v.IDX, n=DAYS.length; grid.style.setProperty('--n',n);
  const frag=document.createDocumentFragment();
  const mk=(cls,txt,style)=>{const e=document.createElement('div');e.className=cls;if(txt!=null)e.textContent=txt;if(style)e.style.cssText=style;return e;};
- // 헤더 1: 월
- frag.appendChild(mk('cell h corner r1','No'));
- frag.appendChild(mk('cell h corner2 r1','항목'));
+ frag.appendChild(mk('cell h corner r1','No')); frag.appendChild(mk('cell h corner2 r1','항목'));
  let i=0;
  while(i<n){let j=i;while(j<n&&DAYS[j].m===DAYS[i].m&&DAYS[j].y===DAYS[i].y)j++;
-  const lbl=(DAYS[i].y!==DAYS[0].y||DAYS[i].m===1?DAYS[i].y+'년 ':'')+DAYS[i].m+'월';
-  frag.appendChild(mk('cell h mon r1',lbl,'grid-column:'+(i+3)+' / span '+(j-i)));i=j;}
- // 헤더 2, 3: 일 / 요일
+  frag.appendChild(mk('cell h mon r1',monLabel(DAYS,i),'grid-column:'+(i+3)+' / span '+(j-i)));i=j;}
  frag.appendChild(mk('cell h corner r2','')); frag.appendChild(mk('cell h corner2 r2',''));
  DAYS.forEach((d,k)=>{const e=mk('cell h day r2 num'+wc(d)+(d.s===todayStr?' today':''),d.day);const w=document.createElement('i');w.textContent=WD[d.wd];e.appendChild(w);e.style.gridColumn=k+3;frag.appendChild(e);});
- // 작업 행
  S.tasks.forEach((t,ti)=>{
   const row=ti+3;
-  const no=document.createElement('button'); no.type='button'; no.className='cell no num'; no.textContent=ti+1; no.title='행 관리'; no.style.gridRow=row; no.onclick=e=>openRowMenu(ti,no); frag.appendChild(no);
+  const no=document.createElement('button'); no.type='button'; no.className='cell no num'; no.textContent=ti+1; no.title='행 관리'; no.style.gridRow=row; no.onclick=()=>openRowMenu(S,ti,no); frag.appendChild(no);
   const nm=mk('cell name'); nm.style.gridRow=row; nm.style.setProperty('--sw',SWATCH[ti%SWATCH.length]);
   const inp=document.createElement('input'); inp.value=t.name; inp.placeholder='항목명'; inp.title='눌러서 항목명 입력'; inp.setAttribute('aria-label','항목명'); inp.id='name_'+t.id;
   inp.addEventListener('input',()=>{t.name=inp.value;persist();});
-  const sw=mk('sw'); nm.append(sw,inp); frag.appendChild(nm);
+  nm.append(mk('sw'),inp); frag.appendChild(nm);
   DAYS.forEach((d,k)=>{const e=mk('cell d'+wc(d)+(d.s===todayStr?' today':'')+(d.day===1&&k?' mstart':''));e.style.gridRow=row;e.style.gridColumn=k+3;e.dataset.date=d.s;e.dataset.task=t.id;frag.appendChild(e);});
-  // 항목(일정) — 겹침 방지: 다음 항목 시작 전까지만 표시(엑셀과 동일)
   const items=t.items.filter(it=>IDX[it.date]!=null).sort((a,b)=>a.date<b.date?-1:1);
   items.forEach((it,q)=>{
    const c=IDX[it.date]; const next=items[q+1]?IDX[items[q+1].date]:n;
    let span=1, bar=false;
    if(it.end){span=Math.max(1,Math.min((IDX[it.end]!=null?IDX[it.end]:n-1)-c+1,n-c));bar=true;}
    const el=mk('it '+(bar?'bar':'point')+' c-'+it.color); el.style.gridRow=row; el.style.gridColumn=(c+3)+' / span '+span;
-   const tx=mk('tx',it.text||' ');
-   if(!bar){const free=Math.max(1,Math.min(next-c,n-c)); tx.style.maxWidth='calc(var(--cw) * '+free+' - 4px)'; el.classList.add('ovf');}
+   const tx=mk('tx',it.text||'\u00a0');
+   if(!bar){const free=Math.max(1,Math.min(next-c,n-c)); tx.style.maxWidth='calc(var(--cw) * '+free+' - 4px)';}
    el.appendChild(tx); el.dataset.item=it.id; el.dataset.task=t.id; el.title=it.text;
    frag.appendChild(el);
   });
  });
- grid.innerHTML=''; grid.appendChild(frag); renderMonthTabs();
+ grid.innerHTML=''; grid.appendChild(frag);
+ v.el.querySelector('.bnum').textContent=S.tasks.length+'개 항목 · '+S.tasks.reduce((a,t)=>a+t.items.length,0)+'건 일정';
+ renderMonthTabs(S);
 }
-function renderMonthTabs(){
- const box=$('mtabs'); box.innerHTML='';
- let i=0; while(i<DAYS.length){let j=i;while(j<DAYS.length&&DAYS[j].m===DAYS[i].m&&DAYS[j].y===DAYS[i].y)j++;
-  const b=document.createElement('button'); b.type='button'; b.className='mt'; b.dataset.i=i; b.textContent=(DAYS[i].y!==DAYS[0].y||DAYS[i].m===1?DAYS[i].y+'.':'')+DAYS[i].m+'월';
-  const at=i; b.onclick=()=>{$('wrap').scrollTo({left:at*34,behavior:'smooth'});}; box.appendChild(b); i=j;}
- markMonthTab();
+function monLabel(DAYS,i){return (DAYS[i].y!==DAYS[0].y||DAYS[i].m===1?DAYS[i].y+'.':'')+DAYS[i].m+'월';}
+function renderMonthTabs(S){
+ const v=V[S.id]; const box=v.el.querySelector('.mtabs'); box.innerHTML='';
+ let i=0; while(i<v.DAYS.length){let j=i;while(j<v.DAYS.length&&v.DAYS[j].m===v.DAYS[i].m&&v.DAYS[j].y===v.DAYS[i].y)j++;
+  const b=document.createElement('button'); b.type='button'; b.className='mt'; b.dataset.i=i; b.textContent=monLabel(v.DAYS,i);
+  const at=i; b.onclick=()=>{v.el.querySelector('.wrap').scrollTo({left:at*34,behavior:'smooth'});}; box.appendChild(b); i=j;}
+ markMonthTab(S);
 }
-function markMonthTab(){
- const i=Math.round($('wrap').scrollLeft/34); const d=DAYS[Math.min(Math.max(i,0),DAYS.length-1)]; if(!d)return;
- [...$('mtabs').children].forEach(b=>{const s=DAYS[+b.dataset.i];b.classList.toggle('on',s.m===d.m&&s.y===d.y);});
+function markMonthTab(S){
+ const v=V[S.id]; if(!v)return; const i=Math.round(v.el.querySelector('.wrap').scrollLeft/34); const d=v.DAYS[Math.min(Math.max(i,0),v.DAYS.length-1)]; if(!d)return;
+ [...v.el.querySelectorAll('.mt')].forEach(b=>{const s=v.DAYS[+b.dataset.i];b.classList.toggle('on',s.m===d.m&&s.y===d.y);});
 }
-$('wrap').addEventListener('scroll',()=>{if($('mtabs').children.length)markMonthTab();},{passive:true});
+function firstItemDate(S){let m=null;S.tasks.forEach(t=>t.items.forEach(i=>{if(V[S.id].IDX[i.date]!=null&&(m===null||i.date<m))m=i.date;}));return m;}
+function scrollToDate(S,d,smooth){const i=d?V[S.id].IDX[d]:null;if(i==null)return;const w=V[S.id].el.querySelector('.wrap');const left=Math.max(0,(i-3)*34);if(smooth)w.scrollTo({left,behavior:'smooth'});else w.scrollLeft=left;}
+function move(S,i,dir){const j=i+dir;if(j<0||j>=S.tasks.length)return;[S.tasks[i],S.tasks[j]]=[S.tasks[j],S.tasks[i]];persist();renderGrid(S);}
+function delRow(S,i){const t=S.tasks[i];if(t.items.length&&!confirm('"'+(t.name||'(이름 없음)')+'" 행과 일정 '+t.items.length+'건을 삭제할까요?'))return;S.tasks.splice(i,1);if(!S.tasks.length)S.tasks.push({id:uid(),name:'',items:[]});persist();renderGrid(S);}
+function addRow(S,at){const t={id:uid(),name:'',items:[]};if(at==null)S.tasks.push(t);else S.tasks.splice(at,0,t);persist();renderGrid(S);
+ const inp=$('name_'+t.id);if(inp){inp.focus();inp.scrollIntoView({block:'nearest'});}}
+
 /* 행 관리 메뉴 */
 let RM=null;
-function openRowMenu(ti,anchor){
+function openRowMenu(S,ti,anchor){
  closeRowMenu(); const t=S.tasks[ti]; const m=document.createElement('div'); m.className='rmenu'; m.setAttribute('role','menu');
- m.innerHTML='<div class="rt">'+(ti+1)+'. '+(t.name?escapeHtml(t.name):'(이름 없음)')+'</div>';
+ const h=document.createElement('div'); h.className='rt'; h.textContent=(ti+1)+'. '+(t.name||'(이름 없음)'); m.appendChild(h);
  const mkb=(txt,fn,cls)=>{const b=document.createElement('button');b.type='button';b.textContent=txt;if(cls)b.className=cls;b.onclick=()=>{closeRowMenu();fn();};m.appendChild(b);};
- mkb('위로 이동',()=>move(ti,-1)); mkb('아래로 이동',()=>move(ti,1)); mkb('아래에 행 추가',()=>{S.tasks.splice(ti+1,0,{id:uid(),name:'',items:[]});persist();renderGrid();});
- mkb('행 삭제',()=>delRow(ti),'danger');
+ mkb('위로 이동',()=>move(S,ti,-1)); mkb('아래로 이동',()=>move(S,ti,1)); mkb('아래에 행 추가',()=>addRow(S,ti+1)); mkb('행 삭제',()=>delRow(S,ti),'danger');
  document.body.appendChild(m); const r=anchor.getBoundingClientRect();
  m.style.top=Math.min(r.bottom+4,window.innerHeight-m.offsetHeight-8)+'px'; m.style.left=Math.max(8,r.left)+'px'; RM=m;
  setTimeout(()=>document.addEventListener('pointerdown',rmOutside,{once:true}),0);
 }
 function rmOutside(e){if(RM&&!RM.contains(e.target))closeRowMenu();else if(RM)setTimeout(()=>document.addEventListener('pointerdown',rmOutside,{once:true}),0);}
 function closeRowMenu(){if(RM){RM.remove();RM=null;}}
-function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function wc(d){return d.wd===0?' sun':d.wd===6?' sat':''}
-function move(i,dir){const j=i+dir;if(j<0||j>=S.tasks.length)return;[S.tasks[i],S.tasks[j]]=[S.tasks[j],S.tasks[i]];persist();renderGrid();}
-function delRow(i){const t=S.tasks[i];if(t.items.length&&!confirm('"'+(t.name||'(이름 없음)')+'" 행과 일정 '+t.items.length+'건을 삭제할까요?'))return;S.tasks.splice(i,1);persist();renderGrid();}
-function addRow(){S.tasks.push({id:uid(),name:'',items:[]});persist();renderGrid();
- const last=S.tasks[S.tasks.length-1];const inp=$('name_'+last.id);if(inp){inp.focus();inp.scrollIntoView({block:'nearest'});}}
 
 /* ===================== 편집기 ===================== */
 let ED=null;
-function openEditor(taskId,itemId,date){
+function openEditor(S,taskId,itemId,date){
  const t=S.tasks.find(x=>x.id===taskId); if(!t) return;
  const it=itemId?t.items.find(x=>x.id===itemId):null;
- ED={task:t,item:it};
+ ED={board:S,task:t,item:it};
  $('edTask').textContent=t.name?t.name:(S.tasks.indexOf(t)+1)+'번 행';
  $('edDate').value=it?it.date:date; $('edEnd').value=it&&it.end?it.end:''; $('edText').value=it?it.text:'';
  setChip(it?it.color:'none'); $('edDelete').hidden=!it;
@@ -353,21 +381,17 @@ function openEditor(taskId,itemId,date){
 function setChip(c){ED.color=c;[...$('chips').children].forEach(b=>b.classList.toggle('on',b.dataset.c===c));}
 function closeEditor(){$('ovl').hidden=true;ED=null;}
 function saveEditor(){
- const date=$('edDate').value, endv=$('edEnd').value, text=$('edText').value.trim();
+ const S=ED.board; const date=$('edDate').value, endv=$('edEnd').value, text=$('edText').value.trim();
  if(!date){toast('시작일을 입력하세요');return;}
  if(!text){if(ED.item)deleteItem();else closeEditor();return;}
  const end=endv&&endv>date?endv:undefined;
  if(ED.item){Object.assign(ED.item,{date,end,text,color:ED.color});}
  else ED.task.items.push({id:uid(),date,end,text,color:ED.color});
  if(date<S.start+'-01'||date>S.end+'-31')toast('기간 밖의 날짜라 표에는 보이지 않습니다');
- persist();renderGrid();closeEditor();
+ persist();renderGrid(S);closeEditor();
 }
-function deleteItem(){if(!ED||!ED.item)return;ED.task.items=ED.task.items.filter(x=>x!==ED.item);persist();renderGrid();closeEditor();}
+function deleteItem(){if(!ED||!ED.item)return;const S=ED.board;ED.task.items=ED.task.items.filter(x=>x!==ED.item);persist();renderGrid(S);closeEditor();}
 COLORS.forEach(c=>{const b=document.createElement('button');b.type='button';b.className='chip c-'+c;b.dataset.c=c;b.title={none:'없음',blue:'파랑',green:'초록',yellow:'노랑',orange:'주황',red:'빨강',purple:'보라'}[c];b.setAttribute('aria-label',b.title);b.onclick=()=>setChip(c);$('chips').appendChild(b);});
-grid.addEventListener('click',e=>{
- const it=e.target.closest('.it'); if(it){openEditor(it.dataset.task,it.dataset.item);return;}
- const d=e.target.closest('.d'); if(d) openEditor(d.dataset.task,null,d.dataset.date);
-});
 $('edSave').onclick=saveEditor; $('edCancel').onclick=closeEditor; $('edDelete').onclick=deleteItem;
 $('ovl').addEventListener('click',e=>{if(e.target===$('ovl'))closeEditor();});
 document.addEventListener('keydown',e=>{
@@ -377,46 +401,38 @@ document.addEventListener('keydown',e=>{
  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();saveEditor();}
 });
 
-/* ===================== 툴바 ===================== */
-$('title').addEventListener('input',()=>{S.title=$('title').value;$('ptitle').textContent=S.title;persist();});
-$('start').addEventListener('change',()=>{const v=$('start').value;if(!v)return;S.start=v;if(S.end<v){S.end=v;$('end').value=v;}persist();renderGrid();});
-$('end').addEventListener('change',()=>{const v=$('end').value;if(!v)return;S.end=v;if(S.start>v){S.start=v;$('start').value=v;}persist();renderGrid();});
-$('btnRow').onclick=addRow; $('btnRow2').onclick=addRow;
-$('btnToday').onclick=()=>{if(IDX[todayStr]==null){toast('오늘이 기간 안에 없습니다');return;}scrollToDate(todayStr);};
+/* ===================== 상단 바 ===================== */
+function addBoard(b){DOC.boards.push(b);persist();const el=makeBoard(b);$('boards').appendChild(el);el.scrollIntoView({behavior:'smooth',block:'start'});const t=el.querySelector('.title');setTimeout(()=>t.focus(),300);}
+$('btnAdd').onclick=()=>addBoard(blank()); $('btnAdd2').onclick=()=>addBoard(blank());
 $('btnPrint').onclick=()=>window.print();
-$('schSel').onchange=()=>open($('schSel').value);
-$('btnNew').onclick=()=>{S=blank();persist();ls.set('schb_cur',S.id);renderAll();$('title').focus();$('title').select();};
-$('btnDup').onclick=()=>{const c=JSON.parse(JSON.stringify(S));c.id=uid();c.title=S.title+' (복사본)';c.tasks.forEach(t=>{t.id=uid();t.items.forEach(i=>i.id=uid());});S=c;persist();ls.set('schb_cur',S.id);renderAll();};
-$('btnDel').onclick=()=>{if(!confirm('"'+S.title+'" 일정표를 삭제할까요? 되돌릴 수 없습니다.'))return;
- ls.del(LS_PRE+S.id);list=list.filter(x=>x.id!==S.id);saveList();
- if(list.length)open(list[0].id);else{S=blank();persist();ls.set('schb_cur',S.id);renderAll();}};
-$('btnJson').onclick=()=>download(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}),safe(S.title)+'.json');
+$('btnJson').onclick=()=>download(new Blob([JSON.stringify(DOC,null,1)],{type:'application/json'}),'일정표.json');
 $('btnJsonIn').onclick=()=>$('fileJson').click();
-$('fileJson').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const s=normalize(JSON.parse(await f.text()));s.id=uid();S=s;persist();ls.set('schb_cur',S.id);renderAll();toast('불러왔습니다');}catch(err){toast('JSON 파일을 읽지 못했습니다');}e.target.value='';};
+$('fileJson').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+ try{const j=JSON.parse(await f.text()); const bs=(Array.isArray(j.boards)?j.boards:[j]).map(normalize); bs.forEach(b=>{b.id=uid();DOC.boards.push(b);}); persist(); renderAll(); toast(bs.length+'개 표를 아래에 추가했습니다');}
+ catch(err){toast('JSON 파일을 읽지 못했습니다');}e.target.value='';};
 $('btnXlsIn').onclick=()=>$('fileXls').click();
 $('fileXls').onchange=async e=>{const f=e.target.files[0];if(!f)return;
- try{const s=await importXlsx(f);S=s;persist();ls.set('schb_cur',S.id);renderAll();toast('엑셀에서 '+s.tasks.length+'개 행을 불러왔습니다');}
+ try{const s=await importXlsx(f);addBoard(s);toast('엑셀에서 '+s.tasks.length+'개 행을 새 표로 불러왔습니다');}
  catch(err){console.error(err);toast('불러오기 실패: '+err.message);}e.target.value='';};
-$('btnXls').onclick=()=>{try{download(new Blob([buildXlsx()],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),safe(S.title)+'.xlsx');toast('엑셀 파일을 저장했습니다');}catch(err){console.error(err);toast('엑셀 생성 실패: '+err.message);}};
+$('btnXlsAll').onclick=()=>exportXlsx(DOC.boards,'일정표_전체.xlsx');
+function exportXlsx(boards,name){try{download(new Blob([buildXlsx(boards)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),name);toast('엑셀 파일을 저장했습니다');}catch(err){console.error(err);toast('엑셀 생성 실패: '+err.message);}}
 function safe(s){return (s||'일정표').replace(/[\\/:*?"<>|]/g,'_').trim()||'일정표'}
 async function download(blob,name){
- // claude.ai 아티팩트 뷰어에서는 downloads 기능으로, 일반 브라우저에서는 링크로 저장
  let dl=null; try{if(window.claude&&typeof window.claude.use==='function')dl=await window.claude.use('downloads');}catch(e){dl=null;}
  if(dl){try{await dl.save({filename:name,data:blob});}catch(err){if(err&&err.code!=='declined')toast('저장하지 못했습니다: '+(err.message||err.code));}return;}
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}
 let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2200);}
 function status(m){$('status').textContent=m;}
 
-/* ===================== XLSX 내보내기 (외부 라이브러리 없음) ===================== */
+/* ===================== XLSX 내보내기 (외부 라이브러리 없음, 표마다 시트 하나) ===================== */
 function colName(n){let s='';while(n>0){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=(n-m-1)/26;}return s;}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function buildXlsx(){
- const D=days(); const n=D.length; const firstDay=3; // C열
+function buildXlsx(boards){
  const fills=['<fill><patternFill patternType="none"/></fill>','<fill><patternFill patternType="gray125"/></fill>',
-  '<fill><patternFill patternType="solid"><fgColor rgb="FFD9D9D9"/></patternFill></fill>', // 2 회색 헤더
-  '<fill><patternFill patternType="solid"><fgColor rgb="FFDDEBF7"/></patternFill></fill>', // 3 연파랑
-  '<fill><patternFill patternType="solid"><fgColor rgb="FFFCE4E4"/></patternFill></fill>', // 4 일요일
-  '<fill><patternFill patternType="solid"><fgColor rgb="FFF2F2F2"/></patternFill></fill>'];// 5 요일행
+  '<fill><patternFill patternType="solid"><fgColor rgb="FFD9D9D9"/></patternFill></fill>',
+  '<fill><patternFill patternType="solid"><fgColor rgb="FFDDEBF7"/></patternFill></fill>',
+  '<fill><patternFill patternType="solid"><fgColor rgb="FFFCE4E4"/></patternFill></fill>',
+  '<fill><patternFill patternType="solid"><fgColor rgb="FFF2F2F2"/></patternFill></fill>'];
  const fillIdx={}; COLORS.filter(c=>c!=='none').forEach(c=>{fillIdx[c]=fills.length;fills.push('<fill><patternFill patternType="solid"><fgColor rgb="FF'+COLOR_HEX[c]+'"/></patternFill></fill>');});
  const fonts=['<font><sz val="11"/><name val="맑은 고딕"/></font>','<font><b/><sz val="24"/><name val="맑은 고딕"/></font>',
   '<font><b/><sz val="16"/><name val="맑은 고딕"/></font>','<font><b/><sz val="11"/><name val="맑은 고딕"/></font>',
@@ -425,8 +441,7 @@ function buildXlsx(){
  const borders=['<border><left/><right/><top/><bottom/><diagonal/></border>',
   '<border><left style="thin"><color rgb="FFBFBFBF"/></left><right style="thin"><color rgb="FFBFBFBF"/></right><top style="thin"><color rgb="FFBFBFBF"/></top><bottom style="thin"><color rgb="FFBFBFBF"/></bottom><diagonal/></border>'];
  const xfs=[]; const xf=(font,fill,border,h,v,wrap)=>{xfs.push('<xf numFmtId="0" fontId="'+font+'" fillId="'+fill+'" borderId="'+border+'" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment'+(h?' horizontal="'+h+'"':'')+' vertical="'+(v||'center')+'"'+(wrap?' wrapText="1"':'')+'/></xf>');return xfs.length-1;};
- const ST={
-  def:xf(0,0,0,null,'center'), title:xf(1,0,0,'left','center'), mon:xf(2,2,1,'center'), hdr:xf(3,2,1,'center'),
+ const ST={def:xf(0,0,0,null,'center'), title:xf(1,0,0,'left','center'), mon:xf(2,2,1,'center'), hdr:xf(3,2,1,'center'),
   day:xf(3,3,1,'center'), daySun:xf(3,4,1,'center'), wd:xf(4,5,1,'center'), wdSun:xf(5,5,1,'center'), wdSat:xf(6,5,1,'center'),
   no:xf(0,2,1,'center'), name:xf(3,3,1,'left'), cell:xf(0,0,1,'left','center',true)};
  const cellC={}; COLORS.filter(c=>c!=='none').forEach(c=>{cellC[c]=xf(0,fillIdx[c],1,'left','center',true);});
@@ -434,54 +449,57 @@ function buildXlsx(){
   +'<fonts count="'+fonts.length+'">'+fonts.join('')+'</fonts><fills count="'+fills.length+'">'+fills.join('')+'</fills><borders count="'+borders.length+'">'+borders.join('')+'</borders>'
   +'<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="'+xfs.length+'">'+xfs.join('')+'</cellXfs>'
   +'<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
-
- const rows={}; const merges=[];
- const put=(r,c,v,s)=>{(rows[r]=rows[r]||{})[c]={v,s};};
- const str=(r,c,v,s)=>put(r,c,{t:'s',v:String(v)},s), num=(r,c,v,s)=>put(r,c,{t:'n',v},s), blk=(r,c,s)=>put(r,c,null,s);
- const lastCol=firstDay+n-1;
- // 1행 제목
- str(1,1,S.title,ST.title); merges.push('A1:'+colName(Math.min(lastCol,12))+'1');
- // 2행 월
- blk(2,1,ST.hdr); blk(2,2,ST.hdr);
- let i=0; while(i<n){let j=i;while(j<n&&D[j].m===D[i].m&&D[j].y===D[i].y)j++;
-  const lbl=(D[i].y!==D[0].y||D[i].m===1?D[i].y+'년 ':'')+D[i].m+'월';
-  str(2,firstDay+i,lbl,ST.mon); for(let k=i+1;k<j;k++)blk(2,firstDay+k,ST.mon);
-  if(j-i>1)merges.push(colName(firstDay+i)+'2:'+colName(firstDay+j-1)+'2'); i=j;}
- // 3행 일, 4행 요일
- str(3,1,'No',ST.hdr); str(3,2,'항목',ST.hdr); blk(4,1,ST.wd); blk(4,2,ST.wd);
- D.forEach((d,k)=>{num(3,firstDay+k,d.day,d.wd===0?ST.daySun:ST.day);str(4,firstDay+k,WD[d.wd],d.wd===0?ST.wdSun:d.wd===6?ST.wdSat:ST.wd);});
- // 작업 행
- const IX={}; D.forEach((d,k)=>IX[d.s]=k);
- S.tasks.forEach((t,ti)=>{const r=5+ti; num(r,1,ti+1,ST.no); str(r,2,t.name,ST.name);
-  for(let k=0;k<n;k++)blk(r,firstDay+k,ST.cell);
-  const items=t.items.filter(it=>IX[it.date]!=null).sort((a,b)=>a.date<b.date?-1:1);
-  items.forEach(it=>{const c=firstDay+IX[it.date]; const st=it.color!=='none'?cellC[it.color]:ST.cell;
-   str(r,c,it.text,st);
-   if(it.end){const e=firstDay+(IX[it.end]!=null?IX[it.end]:n-1); if(e>c){for(let k=c+1;k<=e;k++)blk(r,k,st);merges.push(colName(c)+r+':'+colName(e)+r);}}
-  });});
- const lastRow=4+S.tasks.length;
- // 시트 XML (inlineStr 사용)
- let sd='';
- const rh={1:60,2:23.25,3:16.5,4:15};
- for(let r=1;r<=lastRow;r++){const cells=rows[r]||{}; const h=rh[r]||34.15;
-  sd+='<row r="'+r+'" ht="'+h+'" customHeight="1">';
-  Object.keys(cells).map(Number).sort((a,b)=>a-b).forEach(c=>{const x=cells[c]; const ref=colName(c)+r;
-   if(!x.v) sd+='<c r="'+ref+'" s="'+x.s+'"/>';
-   else if(x.v.t==='n') sd+='<c r="'+ref+'" s="'+x.s+'"><v>'+x.v.v+'</v></c>';
-   else sd+='<c r="'+ref+'" s="'+x.s+'" t="inlineStr"><is><t xml:space="preserve">'+esc(x.v.v)+'</t></is></c>';});
-  sd+='</row>';}
- const sheetXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-  +'<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:'+colName(lastCol)+lastRow+'"/>'
-  +'<sheetViews><sheetView workbookViewId="0" showGridLines="0"><pane xSplit="2" ySplit="4" topLeftCell="C5" activePane="bottomRight" state="frozen"/><selection pane="bottomRight" activeCell="C5" sqref="C5"/></sheetView></sheetViews>'
-  +'<sheetFormatPr defaultRowHeight="15"/><cols><col min="1" max="1" width="4.5" customWidth="1"/><col min="2" max="2" width="28.8" customWidth="1"/><col min="3" max="'+lastCol+'" width="4.7" customWidth="1"/></cols>'
-  +'<sheetData>'+sd+'</sheetData>'
-  +(merges.length?'<mergeCells count="'+merges.length+'">'+merges.map(m=>'<mergeCell ref="'+m+'"/>').join('')+'</mergeCells>':'')
-  +'<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/><pageSetup orientation="landscape" paperSize="8" fitToWidth="1" fitToHeight="0"/></worksheet>';
- const wbXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="일정표" sheetId="1" r:id="rId1"/></sheets></workbook>';
- const wbRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
- const rels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
- const ct='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>';
- return zipStore([['[Content_Types].xml',ct],['_rels/.rels',rels],['xl/workbook.xml',wbXml],['xl/_rels/workbook.xml.rels',wbRels],['xl/styles.xml',stylesXml],['xl/worksheets/sheet1.xml',sheetXml]]);
+ const sheetXml=S=>{
+  const D=days(S); const n=D.length; const firstDay=3;
+  const rows={}; const merges=[];
+  const put=(r,c,v,s)=>{(rows[r]=rows[r]||{})[c]={v,s};};
+  const str=(r,c,v,s)=>put(r,c,{t:'s',v:String(v)},s), num=(r,c,v,s)=>put(r,c,{t:'n',v},s), blk=(r,c,s)=>put(r,c,null,s);
+  const lastCol=firstDay+n-1;
+  str(1,1,S.title||'프로젝트명',ST.title); merges.push('A1:'+colName(Math.min(lastCol,12))+'1');
+  blk(2,1,ST.hdr); blk(2,2,ST.hdr);
+  let i=0; while(i<n){let j=i;while(j<n&&D[j].m===D[i].m&&D[j].y===D[i].y)j++;
+   const lbl=(D[i].y!==D[0].y||D[i].m===1?D[i].y+'년 ':'')+D[i].m+'월';
+   str(2,firstDay+i,lbl,ST.mon); for(let k=i+1;k<j;k++)blk(2,firstDay+k,ST.mon);
+   if(j-i>1)merges.push(colName(firstDay+i)+'2:'+colName(firstDay+j-1)+'2'); i=j;}
+  str(3,1,'No',ST.hdr); str(3,2,'항목',ST.hdr); blk(4,1,ST.wd); blk(4,2,ST.wd);
+  D.forEach((d,k)=>{num(3,firstDay+k,d.day,d.wd===0?ST.daySun:ST.day);str(4,firstDay+k,WD[d.wd],d.wd===0?ST.wdSun:d.wd===6?ST.wdSat:ST.wd);});
+  const IX={}; D.forEach((d,k)=>IX[d.s]=k);
+  S.tasks.forEach((t,ti)=>{const r=5+ti; num(r,1,ti+1,ST.no); str(r,2,t.name,ST.name);
+   for(let k=0;k<n;k++)blk(r,firstDay+k,ST.cell);
+   const items=t.items.filter(it=>IX[it.date]!=null).sort((a,b)=>a.date<b.date?-1:1);
+   items.forEach(it=>{const c=firstDay+IX[it.date]; const st=it.color!=='none'?cellC[it.color]:ST.cell;
+    str(r,c,it.text,st);
+    if(it.end){const e=firstDay+(IX[it.end]!=null?IX[it.end]:n-1); if(e>c){for(let k=c+1;k<=e;k++)blk(r,k,st);merges.push(colName(c)+r+':'+colName(e)+r);}}
+   });});
+  const lastRow=4+S.tasks.length;
+  let sd=''; const rh={1:60,2:23.25,3:16.5,4:15};
+  for(let r=1;r<=lastRow;r++){const cells=rows[r]||{}; const h=rh[r]||34.15;
+   sd+='<row r="'+r+'" ht="'+h+'" customHeight="1">';
+   Object.keys(cells).map(Number).sort((a,b)=>a-b).forEach(c=>{const x=cells[c]; const ref=colName(c)+r;
+    if(!x.v) sd+='<c r="'+ref+'" s="'+x.s+'"/>';
+    else if(x.v.t==='n') sd+='<c r="'+ref+'" s="'+x.s+'"><v>'+x.v.v+'</v></c>';
+    else sd+='<c r="'+ref+'" s="'+x.s+'" t="inlineStr"><is><t xml:space="preserve">'+esc(x.v.v)+'</t></is></c>';});
+   sd+='</row>';}
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+   +'<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:'+colName(lastCol)+lastRow+'"/>'
+   +'<sheetViews><sheetView workbookViewId="0" showGridLines="0"><pane xSplit="2" ySplit="4" topLeftCell="C5" activePane="bottomRight" state="frozen"/><selection pane="bottomRight" activeCell="C5" sqref="C5"/></sheetView></sheetViews>'
+   +'<sheetFormatPr defaultRowHeight="15"/><cols><col min="1" max="1" width="4.5" customWidth="1"/><col min="2" max="2" width="28.8" customWidth="1"/><col min="3" max="'+lastCol+'" width="4.7" customWidth="1"/></cols>'
+   +'<sheetData>'+sd+'</sheetData>'
+   +(merges.length?'<mergeCells count="'+merges.length+'">'+merges.map(m=>'<mergeCell ref="'+m+'"/>').join('')+'</mergeCells>':'')
+   +'<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/><pageSetup orientation="landscape" paperSize="8" fitToWidth="1" fitToHeight="0"/></worksheet>';
+ };
+ const used=new Set(); const sheetName=(S,i)=>{let base=(S.title||'일정표'+(i+1)).replace(/[\\/?*\[\]:]/g,' ').trim().slice(0,28)||'일정표'+(i+1); let nm=base,k=2; while(used.has(nm)){nm=base.slice(0,25)+'('+k+')';k++;} used.add(nm); return nm;};
+ const files=[]; let sheets='',rels='',ct='';
+ boards.forEach((S,i)=>{const id=i+1; files.push(['xl/worksheets/sheet'+id+'.xml',sheetXml(S)]);
+  sheets+='<sheet name="'+esc(sheetName(S,i))+'" sheetId="'+id+'" r:id="rId'+id+'"/>';
+  rels+='<Relationship Id="rId'+id+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+id+'.xml"/>';
+  ct+='<Override PartName="/xl/worksheets/sheet'+id+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';});
+ const sid=boards.length+1;
+ const wbXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+sheets+'</sheets></workbook>';
+ const wbRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+rels+'<Relationship Id="rId'+sid+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+ const rootRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+ const ctXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+ct+'<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>';
+ return zipStore([['[Content_Types].xml',ctXml],['_rels/.rels',rootRels],['xl/workbook.xml',wbXml],['xl/_rels/workbook.xml.rels',wbRels],['xl/styles.xml',stylesXml],...files]);
 }
 /* 무압축 ZIP */
 const CRC=(()=>{const t=new Uint32Array(256);for(let i=0;i<256;i++){let c=i;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[i]=c>>>0;}return t;})();
@@ -569,12 +587,9 @@ async function importXlsx(file){
  return normalize({id:uid(),title:title||file.name.replace(/\.xlsx$/i,''),start,end,tasks});
 }
 
-/* ===================== 시작 ===================== */
-loadList();
-list=list.map(m=>{try{const x=JSON.parse(ls.get(LS_PRE+m.id)||'null');if(x){const n=normalize(x);if(n.title!==x.title||JSON.stringify(n.tasks)!==JSON.stringify(x.tasks))ls.set(LS_PRE+m.id,JSON.stringify(n));return {...m,title:n.title||'프로젝트명 입력'};}}catch(e){}return m;}); saveList();
-const cur=ls.get('schb_cur');
-if(!(cur&&open(cur))&&!(list.length&&open(list[0].id))){S=sample();persist();ls.set('schb_cur',S.id);renderAll();}
-</script>
 
+/* ===================== 시작 ===================== */
+load(); renderAll();
+</script>
 </body>
 </html>
